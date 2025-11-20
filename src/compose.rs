@@ -90,7 +90,7 @@ impl HangulWordComposer {
 
             // Has a vowel, accepts a consonant as a final consonant
             BlockCompositionState::ExpectingCompositeVowelOrFinal(i, v) => {
-                self.cur_block = BlockCompositionState::ExpectingFinal(i, v);
+                self.cur_block = BlockCompositionState::ExpectingCompositeFinalOrNextBlock(i, v, c);
                 WordCompositionState::Composable
             }
 
@@ -484,6 +484,33 @@ mod tests {
                     ],
                     expected_final_word_state: WordCompositionState::StartNewBlock('ㅃ'),
                     expected_final_block_state: BlockCompositionState::ExpectingFinal('ㅉ', 'ㅢ'),
+                    expected_prev_blocks: vec![],
+                },
+                HangulWordComposerTestCase {
+                    input: vec![
+                        HangulLetter::Consonant('ㅇ'),
+                        HangulLetter::Vowel('ㅣ'),
+                        HangulLetter::Consonant('ㅅ'),
+                        HangulLetter::Consonant('ㅅ'),
+                    ],
+                    expected_final_word_state: WordCompositionState::Composable,
+                    expected_final_block_state: BlockCompositionState::ExpectingNextBlock(
+                        'ㅇ', 'ㅣ', 'ㅆ',
+                    ),
+                    expected_prev_blocks: vec![],
+                },
+                HangulWordComposerTestCase {
+                    input: vec![
+                        HangulLetter::Consonant('ㅇ'),
+                        HangulLetter::Vowel('ㅣ'),
+                        HangulLetter::Consonant('ㅅ'),
+                        HangulLetter::Consonant('ㅅ'),
+                        HangulLetter::Consonant('ㅅ'),
+                    ],
+                    expected_final_word_state: WordCompositionState::StartNewBlock('ㅅ'),
+                    expected_final_block_state: BlockCompositionState::ExpectingNextBlock(
+                        'ㅇ', 'ㅣ', 'ㅆ',
+                    ),
                     expected_prev_blocks: vec![],
                 },
             ];
