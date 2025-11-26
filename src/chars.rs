@@ -63,6 +63,19 @@ pub(crate) fn composite_vowel(v1: char, v2: char) -> Option<char> {
     }
 }
 
+pub(crate) fn decompose_composite_vowel(c: char) -> Option<(char, char)> {
+    match c {
+        'ㅘ' => Some(('ㅗ', 'ㅏ')),
+        'ㅙ' => Some(('ㅗ', 'ㅐ')),
+        'ㅚ' => Some(('ㅗ', 'ㅣ')),
+        'ㅝ' => Some(('ㅜ', 'ㅓ')),
+        'ㅞ' => Some(('ㅜ', 'ㅔ')),
+        'ㅟ' => Some(('ㅜ', 'ㅣ')),
+        'ㅢ' => Some(('ㅡ', 'ㅣ')),
+        _ => None,
+    }
+}
+
 /// Determines the type of Hangul letter for a given character.
 /// Does not work for archaic or non-standard jamo like ᅀ.
 pub(crate) fn determine_hangul(c: char) -> Letter {
