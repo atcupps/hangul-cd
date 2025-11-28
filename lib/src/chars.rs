@@ -1,4 +1,3 @@
-use core::prelude::v1;
 use std::fmt::Debug;
 
 /// Utilities and types for chars and char operations
@@ -16,7 +15,6 @@ const S_BASE: u32 = 0xAC00;
 const L_BASE: u32 = 0x1100;
 const V_BASE: u32 = 0x1161;
 const T_BASE: u32 = 0x11A7;
-const L_COUNT: u32 = 19;
 const V_COUNT: u32 = 21;
 const T_COUNT: u32 = 28;
 const N_COUNT: u32 = V_COUNT * T_COUNT;

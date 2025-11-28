@@ -57,6 +57,12 @@ enum BlockCompletionStatus {
     Incomplete(char),
 }
 
+enum BlockPopStatus {
+    PoppedAndShouldContinue(HangulLetter),
+    PoppedAndShouldRemove(HangulLetter),
+    None,
+}
+
 impl BlockComposer {
     pub(crate) fn new() -> Self {
         BlockComposer {
@@ -70,7 +76,7 @@ impl BlockComposer {
         }
     }
 
-    pub(crate) fn push(&mut self, letter: &HangulLetter) -> PushResult {
+    fn push(&mut self, letter: &HangulLetter) -> PushResult {
         match self.state {
             BlockCompositionState::ExpectingInitial => self.try_push_initial(letter),
             BlockCompositionState::ExpectingDoubleInitialOrVowel => {
@@ -86,40 +92,40 @@ impl BlockComposer {
         }
     }
 
-    pub(crate) fn pop(&mut self) -> Option<HangulLetter> {
+    fn pop(&mut self) -> BlockPopStatus {
         if let Some(c) = self.final_second.take() {
             self.state = BlockCompositionState::ExpectingCompositeFinal;
-            Some(HangulLetter::Consonant(c))
+            BlockPopStatus::PoppedAndShouldContinue(HangulLetter::Consonant(c))
         }
         else if let Some(c) = self.final_first.take() {
             self.state = match self.vowel_second {
                 Some(_) => BlockCompositionState::ExpectingFinal,
                 None => BlockCompositionState::ExpectingCompositeVowelOrFinal,
             };
-            Some(HangulLetter::Consonant(c))
+            BlockPopStatus::PoppedAndShouldContinue(HangulLetter::Consonant(c))
         }
         else if let Some(c) = self.vowel_second.take() {
             self.state = BlockCompositionState::ExpectingCompositeVowelOrFinal;
-            Some(HangulLetter::Vowel(c))
+            BlockPopStatus::PoppedAndShouldContinue(HangulLetter::Vowel(c))
         }
         else if let Some(c) = self.vowel_first.take() {
             self.state = match self.initial_second {
                 Some(_) => BlockCompositionState::ExpectingVowel,
                 None => BlockCompositionState::ExpectingDoubleInitialOrVowel,
             };
-            Some(HangulLetter::Vowel(c))
+            BlockPopStatus::PoppedAndShouldContinue(HangulLetter::Vowel(c))
         }
         else if let Some(c) = self.initial_second.take() {
             self.state = BlockCompositionState::ExpectingVowel;
-            Some(HangulLetter::Consonant(c))
+            BlockPopStatus::PoppedAndShouldContinue(HangulLetter::Consonant(c))
         }
         else if let Some(c) = self.initial_first.take() {
             self.state = BlockCompositionState::ExpectingInitial;
-            Some(HangulLetter::Consonant(c))
+            BlockPopStatus::PoppedAndShouldRemove(HangulLetter::Consonant(c))
         }
         else {
             self.state = BlockCompositionState::ExpectingInitial;
-            None
+            BlockPopStatus::None
         }
     }
 
@@ -352,12 +358,40 @@ impl BlockComposer {
     pub(crate) fn from_composed_block(block: &HangulBlock) -> Result<Self, String> {
         let mut result = BlockComposer::new();
         let (i1, i2, v1, v2, f1, f2) = block.decomposed()?;
+
+        if f2.is_some() {
+            result.state = BlockCompositionState::ExpectingNextBlock;
+        }
+        else if f1.is_some() {
+            result.state = BlockCompositionState::ExpectingCompositeFinal;
+        }
+        else if v2.is_some() {
+            result.state = BlockCompositionState::ExpectingFinal;
+        }
+        else if v1.is_some() {
+            result.state = BlockCompositionState::ExpectingCompositeVowelOrFinal;
+        }
+        // Anything after this shouldn't happen. But this won't return an error
+        // because it's conceivable that a manually constructed HangulBlock
+        // leads to one of these states occuring. This may lead to undefined
+        // behavior.
+        else if i2.is_some() {
+            result.state = BlockCompositionState::ExpectingVowel;
+        }
+        else if i1.is_some() {
+            result.state = BlockCompositionState::ExpectingDoubleInitialOrVowel;
+        }
+        else {
+            result.state = BlockCompositionState::ExpectingInitial;
+        }
+
         result.initial_first = i1;
         result.initial_second = i2;
         result.vowel_first = v1;
         result.vowel_second = v2;
         result.final_first = f1;
         result.final_second = f2;
+
         Ok(result)
     }
 }
@@ -383,15 +417,24 @@ impl HangulWordComposer {
 
     pub fn pop(&mut self) -> Result<Option<HangulLetter>, String> {
         match self.cur_block.pop() {
-            Some(l) => Ok(Some(l)),
-            None => {
-                if let Some(last_block) = self.prev_blocks.pop() {
-                    self.cur_block = BlockComposer::from_composed_block(&last_block)?;
-                    Ok(self.cur_block.pop_end_consonant())
-                } else {
-                    Ok(None)
-                }
+            BlockPopStatus::PoppedAndShouldContinue(l) => Ok(Some(l)),
+            BlockPopStatus::PoppedAndShouldRemove(l) => {
+                self.prev_block_to_cur()?;
+                Ok(Some(l))
+            },
+            BlockPopStatus::None => {
+                self.prev_block_to_cur()?;
+                Ok(None)
             }
+        }
+    }
+
+    fn prev_block_to_cur(&mut self) -> Result<(), String> {
+        if let Some(last_block) = self.prev_blocks.pop() {
+            self.cur_block = BlockComposer::from_composed_block(&last_block)?;
+            Ok(())
+        } else {
+            Ok(())
         }
     }
 
@@ -865,5 +908,19 @@ mod tests {
 
         let result_string = composer.as_string().unwrap();
         assert_eq!(result_string, "안".to_string());
+    }
+
+    #[test]
+    fn deletion_removes_empty_block() {
+        let mut composer = HangulWordComposer::new();
+        assert_eq!(composer.push_char('ㅇ'), PushResult::Success);
+        assert_eq!(composer.push_char('ㅏ'), PushResult::Success);
+        assert_eq!(composer.push_char('ㄴ'), PushResult::Success);
+        assert_eq!(composer.push_char('ㄴ'), PushResult::StartNewBlockNoPop);
+        assert_eq!(composer.start_new_block(HangulLetter::Consonant('ㄴ')), Ok(()));
+
+        assert_eq!(composer.pop(), Ok(Some(HangulLetter::Consonant('ㄴ'))));
+        // if current block is still empty, as_string should fail
+        assert_eq!(composer.as_string().unwrap(), "안".to_string());
     }
 }
