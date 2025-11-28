@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::{chars::*, jamo::*};
+use crate::{block::*, jamo::*};
 
 #[derive(Debug)]
 pub struct HangulWordComposer {
