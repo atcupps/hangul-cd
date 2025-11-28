@@ -88,24 +88,37 @@ impl BlockComposer {
 
     pub(crate) fn pop(&mut self) -> Option<HangulLetter> {
         if let Some(c) = self.final_second.take() {
+            self.state = BlockCompositionState::ExpectingCompositeFinal;
             Some(HangulLetter::Consonant(c))
         }
         else if let Some(c) = self.final_first.take() {
+            self.state = match self.vowel_second {
+                Some(_) => BlockCompositionState::ExpectingFinal,
+                None => BlockCompositionState::ExpectingCompositeVowelOrFinal,
+            };
             Some(HangulLetter::Consonant(c))
         }
         else if let Some(c) = self.vowel_second.take() {
+            self.state = BlockCompositionState::ExpectingCompositeVowelOrFinal;
             Some(HangulLetter::Vowel(c))
         }
         else if let Some(c) = self.vowel_first.take() {
+            self.state = match self.initial_second {
+                Some(_) => BlockCompositionState::ExpectingVowel,
+                None => BlockCompositionState::ExpectingDoubleInitialOrVowel,
+            };
             Some(HangulLetter::Vowel(c))
         }
         else if let Some(c) = self.initial_second.take() {
+            self.state = BlockCompositionState::ExpectingVowel;
             Some(HangulLetter::Consonant(c))
         }
         else if let Some(c) = self.initial_first.take() {
+            self.state = BlockCompositionState::ExpectingInitial;
             Some(HangulLetter::Consonant(c))
         }
         else {
+            self.state = BlockCompositionState::ExpectingInitial;
             None
         }
     }
@@ -833,5 +846,24 @@ mod tests {
         assert_eq!(composer.pop(), Ok(Some(HangulLetter::Vowel('ㅏ'))));
         assert_eq!(composer.pop(), Ok(Some(HangulLetter::Consonant('ㅇ'))));
         assert_eq!(composer.pop(), Ok(None));
+    }
+
+    #[test]
+    fn test_deletion_then_write_again() {
+        let mut composer = HangulWordComposer::new();
+        assert_eq!(composer.push_char('ㅇ'), PushResult::Success);
+        assert_eq!(composer.push_char('ㅏ'), PushResult::Success);
+        assert_eq!(composer.push_char('ㄴ'), PushResult::Success);
+
+        assert_eq!(composer.pop(), Ok(Some(HangulLetter::Consonant('ㄴ'))));
+        assert_eq!(composer.pop(), Ok(Some(HangulLetter::Vowel('ㅏ'))));
+        assert_eq!(composer.pop(), Ok(Some(HangulLetter::Consonant('ㅇ'))));
+
+        assert_eq!(composer.push_char('ㅇ'), PushResult::Success);
+        assert_eq!(composer.push_char('ㅏ'), PushResult::Success);
+        assert_eq!(composer.push_char('ㄴ'), PushResult::Success);
+
+        let result_string = composer.as_string().unwrap();
+        assert_eq!(result_string, "안".to_string());
     }
 }

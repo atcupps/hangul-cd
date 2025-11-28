@@ -39,7 +39,7 @@ impl App {
     fn new() -> Self {
         Self {
             composer: HangulWordComposer::new(),
-            status: "Mock Korean keyboard: type roman keys, Esc to quit, Backspace clears"
+            status: "Mock Korean keyboard: type roman keys, Esc to quit"
                 .to_string(),
         }
     }
@@ -48,6 +48,20 @@ impl App {
         self.composer
             .as_string()
             .unwrap_or_else(|err| format!("Error composing text: {err}"))
+    }
+
+    fn backspace(&mut self) {
+        match self.composer.pop() {
+            Ok(Some(letter)) => {
+                self.status = format!("Removed '{:?}'", letter);
+            }
+            Ok(None) => {
+                self.status = "Nothing to backspace".to_string();
+            }
+            Err(err) => {
+                self.status = format!("Error during backspace: {err}");
+            }
+        }
     }
 
     fn clear(&mut self) {
@@ -154,7 +168,7 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
     match key.code {
         KeyCode::Esc => return true,
         KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => return true,
-        KeyCode::Backspace => app.clear(),
+        KeyCode::Backspace => app.backspace(),
         KeyCode::Char(c) => app.handle_char(c),
         _ => {}
     }
@@ -170,7 +184,7 @@ fn render(frame: &mut Frame, app: &App) {
     ])
     .split(frame.area());
 
-    let header_text = "Hangul Composer (2-beolsik mock)\nType roman keys: r=ㄱ, s=ㄴ, e=ㄷ, f=ㄹ, a=ㅁ, q=ㅂ, t=ㅅ, d=ㅇ, w=ㅈ, c=ㅊ, z=ㅋ, x=ㅌ, v=ㅍ, g=ㅎ; k=ㅏ, o=ㅐ, i=ㅑ, j=ㅓ, p=ㅔ, u=ㅕ, h=ㅗ, y=ㅛ, n=ㅜ, b=ㅠ, m=ㅡ, l=ㅣ. Shifted q/w/e/r/t give double consonants; O/P give ㅒ/ㅖ.\nPress Esc (or Ctrl+C) to quit. Backspace clears.";
+    let header_text = "Hangul Composer (2-beolsik mock)\nType roman keys: r=ㄱ, s=ㄴ, e=ㄷ, f=ㄹ, a=ㅁ, q=ㅂ, t=ㅅ, d=ㅇ, w=ㅈ, c=ㅊ, z=ㅋ, x=ㅌ, v=ㅍ, g=ㅎ; k=ㅏ, o=ㅐ, i=ㅑ, j=ㅓ, p=ㅔ, u=ㅕ, h=ㅗ, y=ㅛ, n=ㅜ, b=ㅠ, m=ㅡ, l=ㅣ. Shifted q/w/e/r/t give double consonants; O/P give ㅒ/ㅖ.\nPress Esc (or Ctrl+C) to quit.";
     let header_block = Paragraph::new(header_text)
         .block(Block::default().borders(Borders::ALL).title("Instructions"))
         .style(Style::default().bold());
