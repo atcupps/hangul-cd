@@ -43,13 +43,18 @@ enum BlockCompositionState {
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct BlockComposer {
-    pub(crate) state: BlockCompositionState,
+    state: BlockCompositionState,
     initial_first: Option<char>,
     initial_second: Option<char>,
     vowel_first: Option<char>,
     vowel_second: Option<char>,
     final_first: Option<char>,
     final_second: Option<char>,
+}
+
+enum BlockCompletionStatus {
+    Complete(HangulBlock),
+    Incomplete(char),
 }
 
 impl BlockComposer {
@@ -262,18 +267,18 @@ impl BlockComposer {
         }
     }
 
-    fn as_block(&self) -> Result<Option<HangulBlock>, String> {
-        let initial = match (self.initial_first, self.initial_second) {
-            (Some(i1), Some(i2)) => consonant_doubles(i1, i2)
-                .ok_or_else(|| format!("Invalid double initial consonant: {}{}", i1, i2))?,
-            (Some(i1), None) => i1,
-            _ => return Ok(None),
+    fn try_as_complete_block(&self) -> Result<BlockCompletionStatus, String> {
+        let initial_optional = match (self.initial_first, self.initial_second) {
+            (Some(i1), Some(i2)) => Some(consonant_doubles(i1, i2)
+                .ok_or_else(|| format!("Invalid double initial consonant: {}{}", i1, i2))?),
+            (Some(i1), None) => Some(i1),
+            _ => None,
         };
-        let vowel = match (self.vowel_first, self.vowel_second) {
-            (Some(v1), Some(v2)) => composite_vowel(v1, v2)
-                .ok_or_else(|| format!("Invalid composite vowel: {}{}", v1, v2))?,
-            (Some(v1), None) => v1,
-            _ => return Ok(None),
+        let vowel_optional = match (self.vowel_first, self.vowel_second) {
+            (Some(v1), Some(v2)) => Some(composite_vowel(v1, v2)
+                .ok_or_else(|| format!("Invalid composite vowel: {}{}", v1, v2))?),
+            (Some(v1), None) => Some(v1),
+            _ => None,
         };
         let final_optional = match (self.final_first, self.final_second) {
             (Some(f1), Some(f2)) => Some(
@@ -284,21 +289,26 @@ impl BlockComposer {
             _ => None,
         };
 
-        let block = HangulBlock {
-            initial,
-            vowel,
-            final_optional,
-        };
-        Ok(Some(block))
+        match (initial_optional, vowel_optional) {
+            (Some(initial), Some(vowel)) => {
+                Ok(BlockCompletionStatus::Complete(HangulBlock {
+                    initial,
+                    vowel,
+                    final_optional,
+                }))
+            },
+            (Some(initial), None) => Ok(BlockCompletionStatus::Incomplete(initial)),
+            (None, Some(vowel)) => Ok(BlockCompletionStatus::Incomplete(vowel)),
+            (None, None) => Err("Cannot form block: missing initial consonant and vowel".to_string()),
+        }
     }
 
     fn block_as_string(&self) -> Result<Option<char>, String> {
-        match self.as_block()? {
-            None => Ok(None),
-            Some(block) => block
-                .to_char()
-                .map(Some)
-                .map_err(|e| format!("Error converting block to char: U+{:04X}", e)),
+        match self.try_as_complete_block()? {
+            BlockCompletionStatus::Complete(block) => block.to_char().map(Some).map_err(|e| {
+                format!("Error converting block to char: U+{:04X}", e)
+            }),
+            BlockCompletionStatus::Incomplete(c) => Ok(Some(c)),
         }
     }
 }
@@ -363,13 +373,16 @@ impl HangulWordComposer {
     }
 
     fn complete_current_block(&mut self) -> Result<(), String> {
-        match self.cur_block.as_block()? {
-            Some(block) => {
+        match self.cur_block.try_as_complete_block()? {
+            BlockCompletionStatus::Complete(block) => {
                 self.prev_blocks.push(block);
                 self.cur_block = BlockComposer::new();
                 Ok(())
             }
-            None => Err("Cannot complete current block: incomplete block state".to_string()),
+            BlockCompletionStatus::Incomplete(c) => Err(format!(
+                "Cannot complete current block: incomplete block state, leftover char: {}",
+                c
+            )),
         }
     }
 }
@@ -635,12 +648,12 @@ mod tests {
 
         assert_eq!(
             composer.start_new_block(HangulLetter::Vowel('ㅏ')),
-            Err("Cannot complete current block: incomplete block state".to_string())
+            Err("Cannot form block: missing initial consonant and vowel".to_string())
         );
         let _ = composer.push(&HangulLetter::Consonant('ㄱ'));
         assert_eq!(
             composer.start_new_block(HangulLetter::CompositeVowel('ㅘ')),
-            Err("Cannot complete current block: incomplete block state".to_string())
+            Err("Cannot complete current block: incomplete block state, leftover char: ㄱ".to_string())
         );
     }
 
@@ -742,5 +755,15 @@ mod tests {
 
         let result_string = composer.as_string().unwrap();
         assert_eq!(result_string, "없어요".to_string());
+    }
+
+    #[test]
+    fn test_incomplete_block_as_string() {
+        let mut composer = HangulWordComposer::new();
+
+        assert_eq!(composer.push_char('ㅇ'), PushResult::Success);
+
+        let result_string = composer.as_string().unwrap();
+        assert_eq!(result_string, "ㅇ".to_string());
     }
 }
