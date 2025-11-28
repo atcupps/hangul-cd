@@ -1,159 +1,5 @@
 use std::fmt::Debug;
-
-/// Utilities and types for chars and char operations
-
-// Jamo sets
-const CONSONANTS: &str = "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ";
-const COMPOSITE_CONSONANTS: &str = "ㄲㄸㅃㅆㅉㄵㄺㅄㄳㄶㄻㄼㄽㄾㄿㅀ";
-const INITIAL_COMPOSITE_CONSONANTS: &str = "ㄲㄸㅃㅆㅉ";
-const FINAL_COMPOSITE_CONSONANTS: &str = "ㄲㄵㄺㅄㅆㄳㄶㄻㄼㄽㄾㄿㅀ";
-const VOWELS: &str = "ㅛㅕㅑㅐㅔㅒㅖㅗㅓㅏㅣㅠㅜㅡ";
-const COMPOSITE_VOWELS: &str = "ㅘㅙㅚㅝㅞㅟㅢ";
-
-// Jamo arithmetic
-const S_BASE: u32 = 0xAC00;
-const L_BASE: u32 = 0x1100;
-const V_BASE: u32 = 0x1161;
-const T_BASE: u32 = 0x11A7;
-const V_COUNT: u32 = 21;
-const T_COUNT: u32 = 28;
-const N_COUNT: u32 = V_COUNT * T_COUNT;
-
-pub(crate) fn consonant_doubles(c1: char, c2: char) -> Option<char> {
-    match (c1, c2) {
-        ('ㄱ', 'ㄱ') => Some('ㄲ'),
-        ('ㄷ', 'ㄷ') => Some('ㄸ'),
-        ('ㅂ', 'ㅂ') => Some('ㅃ'),
-        ('ㅅ', 'ㅅ') => Some('ㅆ'),
-        ('ㅈ', 'ㅈ') => Some('ㅉ'),
-        _ => None,
-    }
-}
-
-pub(crate) fn decompose_composite_initial(c: char) -> Option<(char, char)> {
-    match c {
-        'ㄲ' => Some(('ㄱ', 'ㄱ')),
-        'ㄸ' => Some(('ㄷ', 'ㄷ')),
-        'ㅃ' => Some(('ㅂ', 'ㅂ')),
-        'ㅆ' => Some(('ㅅ', 'ㅅ')),
-        'ㅉ' => Some(('ㅈ', 'ㅈ')),
-        _ => None,
-    }
-}
-
-pub(crate) fn composite_final(c1: char, c2: char) -> Option<char> {
-    match (c1, c2) {
-        ('ㄱ', 'ㄱ') => Some('ㄲ'),
-        ('ㄴ', 'ㅈ') => Some('ㄵ'),
-        ('ㄹ', 'ㄱ') => Some('ㄺ'),
-        ('ㅂ', 'ㅅ') => Some('ㅄ'),
-        ('ㅅ', 'ㅅ') => Some('ㅆ'),
-        ('ㄱ', 'ㅅ') => Some('ㄳ'),
-        ('ㄴ', 'ㅎ') => Some('ㄶ'),
-        ('ㄹ', 'ㅁ') => Some('ㄻ'),
-        ('ㄹ', 'ㅂ') => Some('ㄼ'),
-        ('ㄹ', 'ㅅ') => Some('ㄽ'),
-        ('ㄹ', 'ㅌ') => Some('ㄾ'),
-        ('ㄹ', 'ㅍ') => Some('ㄿ'),
-        ('ㄹ', 'ㅎ') => Some('ㅀ'),
-        _ => None,
-    }
-}
-
-pub(crate) fn decompose_composite_final(c: char) -> Option<(char, char)> {
-    match c {
-        'ㄲ' => Some(('ㄱ', 'ㄱ')),
-        'ㄵ' => Some(('ㄴ', 'ㅈ')),
-        'ㄺ' => Some(('ㄹ', 'ㄱ')),
-        'ㅄ' => Some(('ㅂ', 'ㅅ')),
-        'ㅆ' => Some(('ㅅ', 'ㅅ')),
-        'ㄳ' => Some(('ㄱ', 'ㅅ')),
-        'ㄶ' => Some(('ㄴ', 'ㅎ')),
-        'ㄻ' => Some(('ㄹ', 'ㅁ')),
-        'ㄼ' => Some(('ㄹ', 'ㅂ')),
-        'ㄽ' => Some(('ㄹ', 'ㅅ')),
-        'ㄾ' => Some(('ㄹ', 'ㅌ')),
-        'ㄿ' => Some(('ㄹ', 'ㅍ')),
-        'ㅀ' => Some(('ㄹ', 'ㅎ')),
-        _ => None,
-    }
-}
-
-pub(crate) fn composite_vowel(v1: char, v2: char) -> Option<char> {
-    match (v1, v2) {
-        ('ㅗ', 'ㅏ') => Some('ㅘ'),
-        ('ㅗ', 'ㅐ') => Some('ㅙ'),
-        ('ㅗ', 'ㅣ') => Some('ㅚ'),
-        ('ㅜ', 'ㅓ') => Some('ㅝ'),
-        ('ㅜ', 'ㅔ') => Some('ㅞ'),
-        ('ㅜ', 'ㅣ') => Some('ㅟ'),
-        ('ㅡ', 'ㅣ') => Some('ㅢ'),
-        _ => None,
-    }
-}
-
-pub(crate) fn decompose_composite_vowel(c: char) -> Option<(char, char)> {
-    match c {
-        'ㅘ' => Some(('ㅗ', 'ㅏ')),
-        'ㅙ' => Some(('ㅗ', 'ㅐ')),
-        'ㅚ' => Some(('ㅗ', 'ㅣ')),
-        'ㅝ' => Some(('ㅜ', 'ㅓ')),
-        'ㅞ' => Some(('ㅜ', 'ㅔ')),
-        'ㅟ' => Some(('ㅜ', 'ㅣ')),
-        'ㅢ' => Some(('ㅡ', 'ㅣ')),
-        _ => None,
-    }
-}
-
-/// Determines the type of Hangul letter for a given character.
-/// Does not work for archaic or non-standard jamo like ᅀ.
-/// Classifies a character as Hangul jamo or non-Hangul.
-pub fn determine_hangul(c: char) -> Letter {
-    return if CONSONANTS.contains(c) {
-        Letter::Hangul(HangulLetter::Consonant(c))
-    } else if VOWELS.contains(c) {
-        Letter::Hangul(HangulLetter::Vowel(c))
-    } else if COMPOSITE_CONSONANTS.contains(c) {
-        Letter::Hangul(HangulLetter::CompositeConsonant(c))
-    } else if COMPOSITE_VOWELS.contains(c) {
-        Letter::Hangul(HangulLetter::CompositeVowel(c))
-    } else {
-        Letter::NonHangul(c)
-    };
-}
-
-pub(crate) fn is_valid_double_initial(c: char) -> bool {
-    INITIAL_COMPOSITE_CONSONANTS.contains(c)
-}
-
-pub(crate) fn is_valid_composite_final(c: char) -> bool {
-    FINAL_COMPOSITE_CONSONANTS.contains(c)
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Letter {
-    NonHangul(char),
-    Hangul(HangulLetter),
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum HangulLetter {
-    Consonant(char),
-    CompositeConsonant(char),
-    Vowel(char),
-    CompositeVowel(char),
-}
-
-impl HangulLetter {
-    pub(crate) fn get_char(&self) -> char {
-        match self {
-            HangulLetter::Consonant(c)
-            | HangulLetter::CompositeConsonant(c)
-            | HangulLetter::Vowel(c)
-            | HangulLetter::CompositeVowel(c) => *c,
-        }
-    }
-}
+use crate::jamo::*;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct HangulBlock {
@@ -345,7 +191,7 @@ mod tests {
         for c in consonants.chars() {
             let result = determine_hangul(c);
             assert!(
-                result == Letter::Hangul(HangulLetter::Consonant(c)),
+                result == Character::Hangul(Jamo::Consonant(c)),
                 "Failed on consonant: {}; got result: {:?}",
                 c,
                 result
@@ -359,7 +205,7 @@ mod tests {
         for c in vowels.chars() {
             let result = determine_hangul(c);
             assert!(
-                result == Letter::Hangul(HangulLetter::Vowel(c)),
+                result == Character::Hangul(Jamo::Vowel(c)),
                 "Failed on vowel: {}; got result: {:?}",
                 c,
                 result
@@ -373,7 +219,7 @@ mod tests {
         for c in compound_letters.chars() {
             let result = determine_hangul(c);
             assert!(
-                result == Letter::Hangul(HangulLetter::CompositeConsonant(c)),
+                result == Character::Hangul(Jamo::CompositeConsonant(c)),
                 "Failed on compound letter: {}; got result: {:?}",
                 c,
                 result
@@ -387,7 +233,7 @@ mod tests {
         for c in compound_letters.chars() {
             let result = determine_hangul(c);
             assert!(
-                result == Letter::Hangul(HangulLetter::CompositeVowel(c)),
+                result == Character::Hangul(Jamo::CompositeVowel(c)),
                 "Failed on compound letter: {}; got result: {:?}",
                 c,
                 result
@@ -401,7 +247,7 @@ mod tests {
         for c in compound_letters.chars() {
             let result = determine_hangul(c);
             assert!(
-                result == Letter::Hangul(HangulLetter::CompositeConsonant(c)),
+                result == Character::Hangul(Jamo::CompositeConsonant(c)),
                 "Failed on compound letter: {}; got result: {:?}",
                 c,
                 result
@@ -415,7 +261,7 @@ mod tests {
         for c in non_hangul_chars.chars() {
             let result = determine_hangul(c);
             assert!(
-                result == Letter::NonHangul(c),
+                result == Character::NonHangul(c),
                 "Failed on non-Hangul char: {}; got result: {:?}",
                 c,
                 result

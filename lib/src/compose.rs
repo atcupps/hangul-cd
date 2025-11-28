@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use crate::chars::*;
+use crate::{chars::*, jamo::*};
 
 #[derive(Debug)]
 pub struct HangulWordComposer {
@@ -58,8 +58,8 @@ enum BlockCompletionStatus {
 }
 
 enum BlockPopStatus {
-    PoppedAndShouldContinue(HangulLetter),
-    PoppedAndShouldRemove(HangulLetter),
+    PoppedAndShouldContinue(Jamo),
+    PoppedAndShouldRemove(Jamo),
     None,
 }
 
@@ -76,7 +76,7 @@ impl BlockComposer {
         }
     }
 
-    fn push(&mut self, letter: &HangulLetter) -> PushResult {
+    fn push(&mut self, letter: &Jamo) -> PushResult {
         match self.state {
             BlockCompositionState::ExpectingInitial => self.try_push_initial(letter),
             BlockCompositionState::ExpectingDoubleInitialOrVowel => {
@@ -95,52 +95,52 @@ impl BlockComposer {
     fn pop(&mut self) -> BlockPopStatus {
         if let Some(c) = self.final_second.take() {
             self.state = BlockCompositionState::ExpectingCompositeFinal;
-            BlockPopStatus::PoppedAndShouldContinue(HangulLetter::Consonant(c))
+            BlockPopStatus::PoppedAndShouldContinue(Jamo::Consonant(c))
         } else if let Some(c) = self.final_first.take() {
             self.state = match self.vowel_second {
                 Some(_) => BlockCompositionState::ExpectingFinal,
                 None => BlockCompositionState::ExpectingCompositeVowelOrFinal,
             };
-            BlockPopStatus::PoppedAndShouldContinue(HangulLetter::Consonant(c))
+            BlockPopStatus::PoppedAndShouldContinue(Jamo::Consonant(c))
         } else if let Some(c) = self.vowel_second.take() {
             self.state = BlockCompositionState::ExpectingCompositeVowelOrFinal;
-            BlockPopStatus::PoppedAndShouldContinue(HangulLetter::Vowel(c))
+            BlockPopStatus::PoppedAndShouldContinue(Jamo::Vowel(c))
         } else if let Some(c) = self.vowel_first.take() {
             self.state = match self.initial_second {
                 Some(_) => BlockCompositionState::ExpectingVowel,
                 None => BlockCompositionState::ExpectingDoubleInitialOrVowel,
             };
-            BlockPopStatus::PoppedAndShouldContinue(HangulLetter::Vowel(c))
+            BlockPopStatus::PoppedAndShouldContinue(Jamo::Vowel(c))
         } else if let Some(c) = self.initial_second.take() {
             self.state = BlockCompositionState::ExpectingVowel;
-            BlockPopStatus::PoppedAndShouldContinue(HangulLetter::Consonant(c))
+            BlockPopStatus::PoppedAndShouldContinue(Jamo::Consonant(c))
         } else if let Some(c) = self.initial_first.take() {
             self.state = BlockCompositionState::ExpectingInitial;
-            BlockPopStatus::PoppedAndShouldRemove(HangulLetter::Consonant(c))
+            BlockPopStatus::PoppedAndShouldRemove(Jamo::Consonant(c))
         } else {
             self.state = BlockCompositionState::ExpectingInitial;
             BlockPopStatus::None
         }
     }
 
-    pub(crate) fn pop_end_consonant(&mut self) -> Option<HangulLetter> {
+    pub(crate) fn pop_end_consonant(&mut self) -> Option<Jamo> {
         if let Some(c) = self.final_second.take() {
-            Some(HangulLetter::Consonant(c))
+            Some(Jamo::Consonant(c))
         } else if let Some(c) = self.final_first.take() {
-            Some(HangulLetter::Consonant(c))
+            Some(Jamo::Consonant(c))
         } else {
             None
         }
     }
 
-    fn try_push_initial(&mut self, letter: &HangulLetter) -> PushResult {
+    fn try_push_initial(&mut self, letter: &Jamo) -> PushResult {
         match letter {
-            HangulLetter::Consonant(c) => {
+            Jamo::Consonant(c) => {
                 self.initial_first = Some(*c);
                 self.state = BlockCompositionState::ExpectingDoubleInitialOrVowel;
                 PushResult::Success
             }
-            HangulLetter::CompositeConsonant(c) => {
+            Jamo::CompositeConsonant(c) => {
                 if is_valid_double_initial(*c) {
                     self.initial_first = Some(*c);
                     self.state = BlockCompositionState::ExpectingVowel;
@@ -153,11 +153,11 @@ impl BlockComposer {
         }
     }
 
-    fn try_push_double_initial_or_vowel(&mut self, letter: &HangulLetter) -> PushResult {
+    fn try_push_double_initial_or_vowel(&mut self, letter: &Jamo) -> PushResult {
         match letter {
-            HangulLetter::Consonant(c) => {
+            Jamo::Consonant(c) => {
                 if let Some(initial) = self.initial_first {
-                    if consonant_doubles(initial, *c).is_some() {
+                    if create_composite_initial(initial, *c).is_some() {
                         self.initial_second = Some(*c);
                         self.state = BlockCompositionState::ExpectingVowel;
                         PushResult::Success
@@ -168,12 +168,12 @@ impl BlockComposer {
                     PushResult::InvalidHangul
                 }
             }
-            HangulLetter::Vowel(c) => {
+            Jamo::Vowel(c) => {
                 self.vowel_first = Some(*c);
                 self.state = BlockCompositionState::ExpectingCompositeVowelOrFinal;
                 PushResult::Success
             }
-            HangulLetter::CompositeVowel(c) => {
+            Jamo::CompositeVowel(c) => {
                 if let Some((v1, v2)) = decompose_composite_vowel(*c) {
                     self.vowel_first = Some(v1);
                     self.vowel_second = Some(v2);
@@ -183,18 +183,18 @@ impl BlockComposer {
                     PushResult::InvalidHangul
                 }
             }
-            HangulLetter::CompositeConsonant(_) => PushResult::InvalidHangul,
+            Jamo::CompositeConsonant(_) => PushResult::InvalidHangul,
         }
     }
 
-    fn try_push_vowel(&mut self, letter: &HangulLetter) -> PushResult {
+    fn try_push_vowel(&mut self, letter: &Jamo) -> PushResult {
         match letter {
-            HangulLetter::Vowel(c) => {
+            Jamo::Vowel(c) => {
                 self.vowel_first = Some(*c);
                 self.state = BlockCompositionState::ExpectingCompositeVowelOrFinal;
                 PushResult::Success
             }
-            HangulLetter::CompositeVowel(c) => {
+            Jamo::CompositeVowel(c) => {
                 if let Some((v1, v2)) = decompose_composite_vowel(*c) {
                     self.vowel_first = Some(v1);
                     self.vowel_second = Some(v2);
@@ -208,11 +208,11 @@ impl BlockComposer {
         }
     }
 
-    fn try_push_composite_vowel_or_final(&mut self, letter: &HangulLetter) -> PushResult {
+    fn try_push_composite_vowel_or_final(&mut self, letter: &Jamo) -> PushResult {
         match letter {
-            HangulLetter::Vowel(c) => {
+            Jamo::Vowel(c) => {
                 if let Some(v1) = self.vowel_first {
-                    if composite_vowel(v1, *c).is_some() {
+                    if create_composite_vowel(v1, *c).is_some() {
                         self.initial_second = Some(*c);
                         self.state = BlockCompositionState::ExpectingFinal;
                         PushResult::Success
@@ -223,12 +223,12 @@ impl BlockComposer {
                     PushResult::InvalidHangul
                 }
             }
-            HangulLetter::Consonant(c) => {
+            Jamo::Consonant(c) => {
                 self.final_first = Some(*c);
                 self.state = BlockCompositionState::ExpectingCompositeFinal;
                 PushResult::Success
             }
-            HangulLetter::CompositeConsonant(c) => {
+            Jamo::CompositeConsonant(c) => {
                 if is_valid_composite_final(*c) {
                     self.final_first = Some(*c);
                     self.state = BlockCompositionState::ExpectingNextBlock;
@@ -243,14 +243,14 @@ impl BlockComposer {
         }
     }
 
-    fn try_push_final(&mut self, letter: &HangulLetter) -> PushResult {
+    fn try_push_final(&mut self, letter: &Jamo) -> PushResult {
         match letter {
-            HangulLetter::Consonant(c) => {
+            Jamo::Consonant(c) => {
                 self.final_first = Some(*c);
                 self.state = BlockCompositionState::ExpectingCompositeFinal;
                 PushResult::Success
             }
-            HangulLetter::CompositeConsonant(c) => {
+            Jamo::CompositeConsonant(c) => {
                 if is_valid_composite_final(*c) {
                     self.final_first = Some(*c);
                     self.state = BlockCompositionState::ExpectingNextBlock;
@@ -265,11 +265,11 @@ impl BlockComposer {
         }
     }
 
-    fn try_push_composite_final(&mut self, letter: &HangulLetter) -> PushResult {
+    fn try_push_composite_final(&mut self, letter: &Jamo) -> PushResult {
         match letter {
-            HangulLetter::Consonant(c) => {
+            Jamo::Consonant(c) => {
                 if let Some(f) = self.final_first {
-                    if composite_final(f, *c).is_some() {
+                    if create_composite_final(f, *c).is_some() {
                         self.final_second = Some(*c);
                         self.state = BlockCompositionState::ExpectingNextBlock;
                         PushResult::Success
@@ -280,25 +280,25 @@ impl BlockComposer {
                     PushResult::InvalidHangul
                 }
             }
-            HangulLetter::CompositeConsonant(c) => {
+            Jamo::CompositeConsonant(c) => {
                 if is_valid_double_initial(*c) {
                     PushResult::StartNewBlockNoPop
                 } else {
                     PushResult::InvalidHangul
                 }
             }
-            HangulLetter::Vowel(_) | HangulLetter::CompositeVowel(_) => {
+            Jamo::Vowel(_) | Jamo::CompositeVowel(_) => {
                 PushResult::PopAndStartNewBlock
             }
         }
     }
 
-    fn try_push_next_block(&mut self, letter: &HangulLetter) -> PushResult {
+    fn try_push_next_block(&mut self, letter: &Jamo) -> PushResult {
         match letter {
-            HangulLetter::Consonant(_) | HangulLetter::CompositeConsonant(_) => {
+            Jamo::Consonant(_) | Jamo::CompositeConsonant(_) => {
                 PushResult::StartNewBlockNoPop
             }
-            HangulLetter::Vowel(_) | HangulLetter::CompositeVowel(_) => {
+            Jamo::Vowel(_) | Jamo::CompositeVowel(_) => {
                 PushResult::PopAndStartNewBlock
             }
         }
@@ -307,7 +307,7 @@ impl BlockComposer {
     fn try_as_complete_block(&self) -> Result<BlockCompletionStatus, String> {
         let initial_optional = match (self.initial_first, self.initial_second) {
             (Some(i1), Some(i2)) => Some(
-                consonant_doubles(i1, i2)
+                create_composite_initial(i1, i2)
                     .ok_or_else(|| format!("Invalid double initial consonant: {}{}", i1, i2))?,
             ),
             (Some(i1), None) => Some(i1),
@@ -315,7 +315,7 @@ impl BlockComposer {
         };
         let vowel_optional = match (self.vowel_first, self.vowel_second) {
             (Some(v1), Some(v2)) => Some(
-                composite_vowel(v1, v2)
+                create_composite_vowel(v1, v2)
                     .ok_or_else(|| format!("Invalid composite vowel: {}{}", v1, v2))?,
             ),
             (Some(v1), None) => Some(v1),
@@ -323,7 +323,7 @@ impl BlockComposer {
         };
         let final_optional = match (self.final_first, self.final_second) {
             (Some(f1), Some(f2)) => Some(
-                composite_final(f1, f2)
+                create_composite_final(f1, f2)
                     .ok_or_else(|| format!("Invalid composite final consonant: {}{}", f1, f2))?,
             ),
             (Some(f1), None) => Some(f1),
@@ -400,16 +400,16 @@ impl HangulWordComposer {
 
     pub fn push_char(&mut self, c: char) -> PushResult {
         match determine_hangul(c) {
-            Letter::Hangul(hl) => self.push(&hl),
-            Letter::NonHangul(_) => PushResult::NonHangul,
+            Character::Hangul(hl) => self.push(&hl),
+            Character::NonHangul(_) => PushResult::NonHangul,
         }
     }
 
-    pub fn push(&mut self, letter: &HangulLetter) -> PushResult {
+    pub fn push(&mut self, letter: &Jamo) -> PushResult {
         self.cur_block.push(letter)
     }
 
-    pub fn pop(&mut self) -> Result<Option<HangulLetter>, String> {
+    pub fn pop(&mut self) -> Result<Option<Jamo>, String> {
         match self.cur_block.pop() {
             BlockPopStatus::PoppedAndShouldContinue(l) => Ok(Some(l)),
             BlockPopStatus::PoppedAndShouldRemove(l) => {
@@ -432,7 +432,7 @@ impl HangulWordComposer {
         }
     }
 
-    pub fn pop_and_start_new_block(&mut self, letter: HangulLetter) -> Result<(), String> {
+    pub fn pop_and_start_new_block(&mut self, letter: Jamo) -> Result<(), String> {
         match self.cur_block.pop_end_consonant() {
             Some(l) => {
                 self.complete_current_block()?;
@@ -452,7 +452,7 @@ impl HangulWordComposer {
         }
     }
 
-    pub fn start_new_block(&mut self, letter: HangulLetter) -> Result<(), String> {
+    pub fn start_new_block(&mut self, letter: Jamo) -> Result<(), String> {
         self.complete_current_block()?;
         match self.cur_block.push(&letter) {
             PushResult::Success => Ok(()),
@@ -492,7 +492,7 @@ mod tests {
     use super::*;
 
     struct HangulWordComposerPushLetterTestCase {
-        input: Vec<HangulLetter>,
+        input: Vec<Jamo>,
         expected_final_word_state: PushResult,
         expected_final_block_state: BlockCompositionState,
         expected_prev_blocks: Vec<HangulBlock>,
@@ -526,22 +526,22 @@ mod tests {
     fn single_block_composition_valid() {
         let test_cases: Vec<HangulWordComposerPushLetterTestCase> = vec![
             HangulWordComposerPushLetterTestCase {
-                input: vec![HangulLetter::Consonant('ㄱ')],
+                input: vec![Jamo::Consonant('ㄱ')],
                 expected_final_word_state: PushResult::Success,
                 expected_final_block_state: BlockCompositionState::ExpectingDoubleInitialOrVowel,
                 expected_prev_blocks: vec![],
             },
             HangulWordComposerPushLetterTestCase {
-                input: vec![HangulLetter::Consonant('ㄱ'), HangulLetter::Consonant('ㄱ')],
+                input: vec![Jamo::Consonant('ㄱ'), Jamo::Consonant('ㄱ')],
                 expected_final_word_state: PushResult::Success,
                 expected_final_block_state: BlockCompositionState::ExpectingVowel,
                 expected_prev_blocks: vec![],
             },
             HangulWordComposerPushLetterTestCase {
                 input: vec![
-                    HangulLetter::Consonant('ㄱ'),
-                    HangulLetter::Consonant('ㄱ'),
-                    HangulLetter::Vowel('ㅜ'),
+                    Jamo::Consonant('ㄱ'),
+                    Jamo::Consonant('ㄱ'),
+                    Jamo::Vowel('ㅜ'),
                 ],
                 expected_final_word_state: PushResult::Success,
                 expected_final_block_state: BlockCompositionState::ExpectingCompositeVowelOrFinal,
@@ -549,10 +549,10 @@ mod tests {
             },
             HangulWordComposerPushLetterTestCase {
                 input: vec![
-                    HangulLetter::Consonant('ㄱ'),
-                    HangulLetter::Consonant('ㄱ'),
-                    HangulLetter::Vowel('ㅜ'),
-                    HangulLetter::Vowel('ㅓ'),
+                    Jamo::Consonant('ㄱ'),
+                    Jamo::Consonant('ㄱ'),
+                    Jamo::Vowel('ㅜ'),
+                    Jamo::Vowel('ㅓ'),
                 ],
                 expected_final_word_state: PushResult::Success,
                 expected_final_block_state: BlockCompositionState::ExpectingFinal,
@@ -560,11 +560,11 @@ mod tests {
             },
             HangulWordComposerPushLetterTestCase {
                 input: vec![
-                    HangulLetter::Consonant('ㄱ'),
-                    HangulLetter::Consonant('ㄱ'),
-                    HangulLetter::Vowel('ㅜ'),
-                    HangulLetter::Vowel('ㅓ'),
-                    HangulLetter::Consonant('ㄹ'),
+                    Jamo::Consonant('ㄱ'),
+                    Jamo::Consonant('ㄱ'),
+                    Jamo::Vowel('ㅜ'),
+                    Jamo::Vowel('ㅓ'),
+                    Jamo::Consonant('ㄹ'),
                 ],
                 expected_final_word_state: PushResult::Success,
                 expected_final_block_state: BlockCompositionState::ExpectingCompositeFinal,
@@ -572,12 +572,12 @@ mod tests {
             },
             HangulWordComposerPushLetterTestCase {
                 input: vec![
-                    HangulLetter::Consonant('ㄱ'),
-                    HangulLetter::Consonant('ㄱ'),
-                    HangulLetter::Vowel('ㅜ'),
-                    HangulLetter::Vowel('ㅓ'),
-                    HangulLetter::Consonant('ㄹ'),
-                    HangulLetter::Consonant('ㅎ'),
+                    Jamo::Consonant('ㄱ'),
+                    Jamo::Consonant('ㄱ'),
+                    Jamo::Vowel('ㅜ'),
+                    Jamo::Vowel('ㅓ'),
+                    Jamo::Consonant('ㄹ'),
+                    Jamo::Consonant('ㅎ'),
                 ],
                 expected_final_word_state: PushResult::Success,
                 expected_final_block_state: BlockCompositionState::ExpectingNextBlock,
@@ -585,13 +585,13 @@ mod tests {
             },
             HangulWordComposerPushLetterTestCase {
                 input: vec![
-                    HangulLetter::Consonant('ㄱ'),
-                    HangulLetter::Consonant('ㄱ'),
-                    HangulLetter::Vowel('ㅜ'),
-                    HangulLetter::Vowel('ㅓ'),
-                    HangulLetter::Consonant('ㄹ'),
-                    HangulLetter::Consonant('ㅎ'),
-                    HangulLetter::Vowel('ㅏ'),
+                    Jamo::Consonant('ㄱ'),
+                    Jamo::Consonant('ㄱ'),
+                    Jamo::Vowel('ㅜ'),
+                    Jamo::Vowel('ㅓ'),
+                    Jamo::Consonant('ㄹ'),
+                    Jamo::Consonant('ㅎ'),
+                    Jamo::Vowel('ㅏ'),
                 ],
                 expected_final_word_state: PushResult::PopAndStartNewBlock,
                 expected_final_block_state: BlockCompositionState::ExpectingNextBlock,
@@ -599,9 +599,9 @@ mod tests {
             },
             HangulWordComposerPushLetterTestCase {
                 input: vec![
-                    HangulLetter::CompositeConsonant('ㅃ'),
-                    HangulLetter::Vowel('ㅣ'),
-                    HangulLetter::CompositeConsonant('ㄳ'),
+                    Jamo::CompositeConsonant('ㅃ'),
+                    Jamo::Vowel('ㅣ'),
+                    Jamo::CompositeConsonant('ㄳ'),
                 ],
                 expected_final_word_state: PushResult::Success,
                 expected_final_block_state: BlockCompositionState::ExpectingNextBlock,
@@ -609,8 +609,8 @@ mod tests {
             },
             HangulWordComposerPushLetterTestCase {
                 input: vec![
-                    HangulLetter::Consonant('ㅈ'),
-                    HangulLetter::CompositeVowel('ㅚ'),
+                    Jamo::Consonant('ㅈ'),
+                    Jamo::CompositeVowel('ㅚ'),
                 ],
                 expected_final_word_state: PushResult::Success,
                 expected_final_block_state: BlockCompositionState::ExpectingFinal,
@@ -618,9 +618,9 @@ mod tests {
             },
             HangulWordComposerPushLetterTestCase {
                 input: vec![
-                    HangulLetter::CompositeConsonant('ㅉ'),
-                    HangulLetter::CompositeVowel('ㅢ'),
-                    HangulLetter::CompositeConsonant('ㅃ'),
+                    Jamo::CompositeConsonant('ㅉ'),
+                    Jamo::CompositeVowel('ㅢ'),
+                    Jamo::CompositeConsonant('ㅃ'),
                 ],
                 expected_final_word_state: PushResult::StartNewBlockNoPop,
                 expected_final_block_state: BlockCompositionState::ExpectingFinal,
@@ -628,10 +628,10 @@ mod tests {
             },
             HangulWordComposerPushLetterTestCase {
                 input: vec![
-                    HangulLetter::Consonant('ㅇ'),
-                    HangulLetter::Vowel('ㅣ'),
-                    HangulLetter::Consonant('ㅅ'),
-                    HangulLetter::Consonant('ㅅ'),
+                    Jamo::Consonant('ㅇ'),
+                    Jamo::Vowel('ㅣ'),
+                    Jamo::Consonant('ㅅ'),
+                    Jamo::Consonant('ㅅ'),
                 ],
                 expected_final_word_state: PushResult::Success,
                 expected_final_block_state: BlockCompositionState::ExpectingNextBlock,
@@ -639,11 +639,11 @@ mod tests {
             },
             HangulWordComposerPushLetterTestCase {
                 input: vec![
-                    HangulLetter::Consonant('ㅇ'),
-                    HangulLetter::Vowel('ㅣ'),
-                    HangulLetter::Consonant('ㅅ'),
-                    HangulLetter::Consonant('ㅅ'),
-                    HangulLetter::Consonant('ㅅ'),
+                    Jamo::Consonant('ㅇ'),
+                    Jamo::Vowel('ㅣ'),
+                    Jamo::Consonant('ㅅ'),
+                    Jamo::Consonant('ㅅ'),
+                    Jamo::Consonant('ㅅ'),
                 ],
                 expected_final_word_state: PushResult::StartNewBlockNoPop,
                 expected_final_block_state: BlockCompositionState::ExpectingNextBlock,
@@ -658,16 +658,16 @@ mod tests {
     fn single_block_composition_invalid() {
         let test_cases: Vec<HangulWordComposerPushLetterTestCase> = vec![
             HangulWordComposerPushLetterTestCase {
-                input: vec![HangulLetter::Consonant('ㄱ'), HangulLetter::Consonant('ㄹ')],
+                input: vec![Jamo::Consonant('ㄱ'), Jamo::Consonant('ㄹ')],
                 expected_final_word_state: PushResult::InvalidHangul,
                 expected_final_block_state: BlockCompositionState::ExpectingDoubleInitialOrVowel,
                 expected_prev_blocks: vec![],
             },
             HangulWordComposerPushLetterTestCase {
                 input: vec![
-                    HangulLetter::Consonant('ㄱ'),
-                    HangulLetter::Vowel('ㅏ'),
-                    HangulLetter::Vowel('ㅏ'),
+                    Jamo::Consonant('ㄱ'),
+                    Jamo::Vowel('ㅏ'),
+                    Jamo::Vowel('ㅏ'),
                 ],
                 expected_final_word_state: PushResult::InvalidHangul,
                 expected_final_block_state: BlockCompositionState::ExpectingCompositeVowelOrFinal,
@@ -682,23 +682,23 @@ mod tests {
         let mut composer = HangulWordComposer::new();
 
         assert_eq!(
-            composer.push(&HangulLetter::Consonant('ㄱ')),
+            composer.push(&Jamo::Consonant('ㄱ')),
             PushResult::Success
         );
         assert_eq!(
-            composer.push(&HangulLetter::Vowel('ㅏ')),
+            composer.push(&Jamo::Vowel('ㅏ')),
             PushResult::Success
         );
         assert_eq!(
-            composer.push(&HangulLetter::Consonant('ㄴ')),
+            composer.push(&Jamo::Consonant('ㄴ')),
             PushResult::Success,
         );
         assert_eq!(
-            composer.push(&HangulLetter::Consonant('ㅇ')),
+            composer.push(&Jamo::Consonant('ㅇ')),
             PushResult::StartNewBlockNoPop,
         );
         assert_eq!(
-            composer.start_new_block(HangulLetter::Consonant('ㅇ')),
+            composer.start_new_block(Jamo::Consonant('ㅇ')),
             Ok(())
         );
         assert_eq!(
@@ -714,15 +714,15 @@ mod tests {
             BlockCompositionState::ExpectingDoubleInitialOrVowel
         );
         assert_eq!(
-            composer.push(&HangulLetter::Vowel('ㅛ')),
+            composer.push(&Jamo::Vowel('ㅛ')),
             PushResult::Success
         );
         assert_eq!(
-            composer.push(&HangulLetter::CompositeConsonant('ㅉ')),
+            composer.push(&Jamo::CompositeConsonant('ㅉ')),
             PushResult::StartNewBlockNoPop,
         );
         assert_eq!(
-            composer.start_new_block(HangulLetter::CompositeConsonant('ㅉ')),
+            composer.start_new_block(Jamo::CompositeConsonant('ㅉ')),
             Ok(())
         );
         assert_eq!(
@@ -747,12 +747,12 @@ mod tests {
         let mut composer = HangulWordComposer::new();
 
         assert_eq!(
-            composer.start_new_block(HangulLetter::Vowel('ㅏ')),
+            composer.start_new_block(Jamo::Vowel('ㅏ')),
             Err("Cannot form block: missing initial consonant and vowel".to_string())
         );
-        let _ = composer.push(&HangulLetter::Consonant('ㄱ'));
+        let _ = composer.push(&Jamo::Consonant('ㄱ'));
         assert_eq!(
-            composer.start_new_block(HangulLetter::CompositeVowel('ㅘ')),
+            composer.start_new_block(Jamo::CompositeVowel('ㅘ')),
             Err(
                 "Cannot complete current block: incomplete block state, leftover char: ㄱ"
                     .to_string()
@@ -807,27 +807,27 @@ mod tests {
         assert_eq!(composer.push_char('ㄴ'), PushResult::Success);
         assert_eq!(composer.push_char('ㄴ'), PushResult::StartNewBlockNoPop);
         assert_eq!(
-            composer.start_new_block(HangulLetter::Consonant('ㄴ')),
+            composer.start_new_block(Jamo::Consonant('ㄴ')),
             Ok(())
         );
         assert_eq!(composer.push_char('ㅕ'), PushResult::Success);
         assert_eq!(composer.push_char('ㅇ'), PushResult::Success);
         assert_eq!(composer.push_char('ㅎ'), PushResult::StartNewBlockNoPop);
         assert_eq!(
-            composer.start_new_block(HangulLetter::Consonant('ㅎ')),
+            composer.start_new_block(Jamo::Consonant('ㅎ')),
             Ok(())
         );
         assert_eq!(composer.push_char('ㅏ'), PushResult::Success);
         assert_eq!(composer.push_char('ㅅ'), PushResult::Success);
         assert_eq!(composer.push_char('ㅔ'), PushResult::PopAndStartNewBlock);
         assert_eq!(
-            composer.pop_and_start_new_block(HangulLetter::Vowel('ㅔ')),
+            composer.pop_and_start_new_block(Jamo::Vowel('ㅔ')),
             Ok(())
         );
         assert_eq!(composer.push_char('ㅇ'), PushResult::Success);
         assert_eq!(composer.push_char('ㅛ'), PushResult::PopAndStartNewBlock);
         assert_eq!(
-            composer.pop_and_start_new_block(HangulLetter::Vowel('ㅛ')),
+            composer.pop_and_start_new_block(Jamo::Vowel('ㅛ')),
             Ok(())
         );
 
@@ -845,14 +845,14 @@ mod tests {
         assert_eq!(composer.push_char('ㅅ'), PushResult::Success);
         assert_eq!(composer.push_char('ㅇ'), PushResult::StartNewBlockNoPop);
         assert_eq!(
-            composer.start_new_block(HangulLetter::Consonant('ㅇ')),
+            composer.start_new_block(Jamo::Consonant('ㅇ')),
             Ok(())
         );
         assert_eq!(composer.push_char('ㅓ'), PushResult::Success);
         assert_eq!(composer.push_char('ㅇ'), PushResult::Success);
         assert_eq!(composer.push_char('ㅛ'), PushResult::PopAndStartNewBlock);
         assert_eq!(
-            composer.pop_and_start_new_block(HangulLetter::Vowel('ㅛ')),
+            composer.pop_and_start_new_block(Jamo::Vowel('ㅛ')),
             Ok(())
         );
 
@@ -878,16 +878,16 @@ mod tests {
         assert_eq!(composer.push_char('ㄴ'), PushResult::Success);
         assert_eq!(composer.push_char('ㄴ'), PushResult::StartNewBlockNoPop);
         assert_eq!(
-            composer.start_new_block(HangulLetter::Consonant('ㄴ')),
+            composer.start_new_block(Jamo::Consonant('ㄴ')),
             Ok(())
         );
         assert_eq!(composer.push_char('ㅕ'), PushResult::Success);
 
-        assert_eq!(composer.pop(), Ok(Some(HangulLetter::Vowel('ㅕ'))));
-        assert_eq!(composer.pop(), Ok(Some(HangulLetter::Consonant('ㄴ'))));
-        assert_eq!(composer.pop(), Ok(Some(HangulLetter::Consonant('ㄴ'))));
-        assert_eq!(composer.pop(), Ok(Some(HangulLetter::Vowel('ㅏ'))));
-        assert_eq!(composer.pop(), Ok(Some(HangulLetter::Consonant('ㅇ'))));
+        assert_eq!(composer.pop(), Ok(Some(Jamo::Vowel('ㅕ'))));
+        assert_eq!(composer.pop(), Ok(Some(Jamo::Consonant('ㄴ'))));
+        assert_eq!(composer.pop(), Ok(Some(Jamo::Consonant('ㄴ'))));
+        assert_eq!(composer.pop(), Ok(Some(Jamo::Vowel('ㅏ'))));
+        assert_eq!(composer.pop(), Ok(Some(Jamo::Consonant('ㅇ'))));
         assert_eq!(composer.pop(), Ok(None));
     }
 
@@ -898,9 +898,9 @@ mod tests {
         assert_eq!(composer.push_char('ㅏ'), PushResult::Success);
         assert_eq!(composer.push_char('ㄴ'), PushResult::Success);
 
-        assert_eq!(composer.pop(), Ok(Some(HangulLetter::Consonant('ㄴ'))));
-        assert_eq!(composer.pop(), Ok(Some(HangulLetter::Vowel('ㅏ'))));
-        assert_eq!(composer.pop(), Ok(Some(HangulLetter::Consonant('ㅇ'))));
+        assert_eq!(composer.pop(), Ok(Some(Jamo::Consonant('ㄴ'))));
+        assert_eq!(composer.pop(), Ok(Some(Jamo::Vowel('ㅏ'))));
+        assert_eq!(composer.pop(), Ok(Some(Jamo::Consonant('ㅇ'))));
 
         assert_eq!(composer.push_char('ㅇ'), PushResult::Success);
         assert_eq!(composer.push_char('ㅏ'), PushResult::Success);
@@ -918,11 +918,11 @@ mod tests {
         assert_eq!(composer.push_char('ㄴ'), PushResult::Success);
         assert_eq!(composer.push_char('ㄴ'), PushResult::StartNewBlockNoPop);
         assert_eq!(
-            composer.start_new_block(HangulLetter::Consonant('ㄴ')),
+            composer.start_new_block(Jamo::Consonant('ㄴ')),
             Ok(())
         );
 
-        assert_eq!(composer.pop(), Ok(Some(HangulLetter::Consonant('ㄴ'))));
+        assert_eq!(composer.pop(), Ok(Some(Jamo::Consonant('ㄴ'))));
         // if current block is still empty, as_string should fail
         assert_eq!(composer.as_string().unwrap(), "안".to_string());
     }
