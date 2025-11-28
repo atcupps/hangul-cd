@@ -96,34 +96,28 @@ impl BlockComposer {
         if let Some(c) = self.final_second.take() {
             self.state = BlockCompositionState::ExpectingCompositeFinal;
             BlockPopStatus::PoppedAndShouldContinue(HangulLetter::Consonant(c))
-        }
-        else if let Some(c) = self.final_first.take() {
+        } else if let Some(c) = self.final_first.take() {
             self.state = match self.vowel_second {
                 Some(_) => BlockCompositionState::ExpectingFinal,
                 None => BlockCompositionState::ExpectingCompositeVowelOrFinal,
             };
             BlockPopStatus::PoppedAndShouldContinue(HangulLetter::Consonant(c))
-        }
-        else if let Some(c) = self.vowel_second.take() {
+        } else if let Some(c) = self.vowel_second.take() {
             self.state = BlockCompositionState::ExpectingCompositeVowelOrFinal;
             BlockPopStatus::PoppedAndShouldContinue(HangulLetter::Vowel(c))
-        }
-        else if let Some(c) = self.vowel_first.take() {
+        } else if let Some(c) = self.vowel_first.take() {
             self.state = match self.initial_second {
                 Some(_) => BlockCompositionState::ExpectingVowel,
                 None => BlockCompositionState::ExpectingDoubleInitialOrVowel,
             };
             BlockPopStatus::PoppedAndShouldContinue(HangulLetter::Vowel(c))
-        }
-        else if let Some(c) = self.initial_second.take() {
+        } else if let Some(c) = self.initial_second.take() {
             self.state = BlockCompositionState::ExpectingVowel;
             BlockPopStatus::PoppedAndShouldContinue(HangulLetter::Consonant(c))
-        }
-        else if let Some(c) = self.initial_first.take() {
+        } else if let Some(c) = self.initial_first.take() {
             self.state = BlockCompositionState::ExpectingInitial;
             BlockPopStatus::PoppedAndShouldRemove(HangulLetter::Consonant(c))
-        }
-        else {
+        } else {
             self.state = BlockCompositionState::ExpectingInitial;
             BlockPopStatus::None
         }
@@ -312,14 +306,18 @@ impl BlockComposer {
 
     fn try_as_complete_block(&self) -> Result<BlockCompletionStatus, String> {
         let initial_optional = match (self.initial_first, self.initial_second) {
-            (Some(i1), Some(i2)) => Some(consonant_doubles(i1, i2)
-                .ok_or_else(|| format!("Invalid double initial consonant: {}{}", i1, i2))?),
+            (Some(i1), Some(i2)) => Some(
+                consonant_doubles(i1, i2)
+                    .ok_or_else(|| format!("Invalid double initial consonant: {}{}", i1, i2))?,
+            ),
             (Some(i1), None) => Some(i1),
             _ => None,
         };
         let vowel_optional = match (self.vowel_first, self.vowel_second) {
-            (Some(v1), Some(v2)) => Some(composite_vowel(v1, v2)
-                .ok_or_else(|| format!("Invalid composite vowel: {}{}", v1, v2))?),
+            (Some(v1), Some(v2)) => Some(
+                composite_vowel(v1, v2)
+                    .ok_or_else(|| format!("Invalid composite vowel: {}{}", v1, v2))?,
+            ),
             (Some(v1), None) => Some(v1),
             _ => None,
         };
@@ -333,24 +331,25 @@ impl BlockComposer {
         };
 
         match (initial_optional, vowel_optional) {
-            (Some(initial), Some(vowel)) => {
-                Ok(BlockCompletionStatus::Complete(HangulBlock {
-                    initial,
-                    vowel,
-                    final_optional,
-                }))
-            },
+            (Some(initial), Some(vowel)) => Ok(BlockCompletionStatus::Complete(HangulBlock {
+                initial,
+                vowel,
+                final_optional,
+            })),
             (Some(initial), None) => Ok(BlockCompletionStatus::Incomplete(initial)),
             (None, Some(vowel)) => Ok(BlockCompletionStatus::Incomplete(vowel)),
-            (None, None) => Err("Cannot form block: missing initial consonant and vowel".to_string()),
+            (None, None) => {
+                Err("Cannot form block: missing initial consonant and vowel".to_string())
+            }
         }
     }
 
     fn block_as_string(&self) -> Result<Option<char>, String> {
         match self.try_as_complete_block()? {
-            BlockCompletionStatus::Complete(block) => block.to_char().map(Some).map_err(|e| {
-                format!("Error converting block to char: U+{:04X}", e)
-            }),
+            BlockCompletionStatus::Complete(block) => block
+                .to_char()
+                .map(Some)
+                .map_err(|e| format!("Error converting block to char: U+{:04X}", e)),
             BlockCompletionStatus::Incomplete(c) => Ok(Some(c)),
         }
     }
@@ -361,14 +360,11 @@ impl BlockComposer {
 
         if f2.is_some() {
             result.state = BlockCompositionState::ExpectingNextBlock;
-        }
-        else if f1.is_some() {
+        } else if f1.is_some() {
             result.state = BlockCompositionState::ExpectingCompositeFinal;
-        }
-        else if v2.is_some() {
+        } else if v2.is_some() {
             result.state = BlockCompositionState::ExpectingFinal;
-        }
-        else if v1.is_some() {
+        } else if v1.is_some() {
             result.state = BlockCompositionState::ExpectingCompositeVowelOrFinal;
         }
         // Anything after this shouldn't happen. But this won't return an error
@@ -377,11 +373,9 @@ impl BlockComposer {
         // behavior.
         else if i2.is_some() {
             result.state = BlockCompositionState::ExpectingVowel;
-        }
-        else if i1.is_some() {
+        } else if i1.is_some() {
             result.state = BlockCompositionState::ExpectingDoubleInitialOrVowel;
-        }
-        else {
+        } else {
             result.state = BlockCompositionState::ExpectingInitial;
         }
 
@@ -421,7 +415,7 @@ impl HangulWordComposer {
             BlockPopStatus::PoppedAndShouldRemove(l) => {
                 self.prev_block_to_cur()?;
                 Ok(Some(l))
-            },
+            }
             BlockPopStatus::None => {
                 self.prev_block_to_cur()?;
                 Ok(None)
@@ -759,7 +753,10 @@ mod tests {
         let _ = composer.push(&HangulLetter::Consonant('ㄱ'));
         assert_eq!(
             composer.start_new_block(HangulLetter::CompositeVowel('ㅘ')),
-            Err("Cannot complete current block: incomplete block state, leftover char: ㄱ".to_string())
+            Err(
+                "Cannot complete current block: incomplete block state, leftover char: ㄱ"
+                    .to_string()
+            )
         );
     }
 
@@ -880,7 +877,10 @@ mod tests {
         assert_eq!(composer.push_char('ㅏ'), PushResult::Success);
         assert_eq!(composer.push_char('ㄴ'), PushResult::Success);
         assert_eq!(composer.push_char('ㄴ'), PushResult::StartNewBlockNoPop);
-        assert_eq!(composer.start_new_block(HangulLetter::Consonant('ㄴ')), Ok(()));
+        assert_eq!(
+            composer.start_new_block(HangulLetter::Consonant('ㄴ')),
+            Ok(())
+        );
         assert_eq!(composer.push_char('ㅕ'), PushResult::Success);
 
         assert_eq!(composer.pop(), Ok(Some(HangulLetter::Vowel('ㅕ'))));
@@ -917,7 +917,10 @@ mod tests {
         assert_eq!(composer.push_char('ㅏ'), PushResult::Success);
         assert_eq!(composer.push_char('ㄴ'), PushResult::Success);
         assert_eq!(composer.push_char('ㄴ'), PushResult::StartNewBlockNoPop);
-        assert_eq!(composer.start_new_block(HangulLetter::Consonant('ㄴ')), Ok(()));
+        assert_eq!(
+            composer.start_new_block(HangulLetter::Consonant('ㄴ')),
+            Ok(())
+        );
 
         assert_eq!(composer.pop(), Ok(Some(HangulLetter::Consonant('ㄴ'))));
         // if current block is still empty, as_string should fail

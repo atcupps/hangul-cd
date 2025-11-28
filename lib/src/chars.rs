@@ -200,7 +200,19 @@ impl HangulBlock {
         }
     }
 
-    pub fn decomposed(&self) -> Result<(Option<char>, Option<char>, Option<char>, Option<char>, Option<char>, Option<char>), String> {
+    pub fn decomposed(
+        &self,
+    ) -> Result<
+        (
+            Option<char>,
+            Option<char>,
+            Option<char>,
+            Option<char>,
+            Option<char>,
+            Option<char>,
+        ),
+        String,
+    > {
         let (i1, i2) = match decompose_composite_initial(self.initial) {
             Some((a, b)) => (Some(a), Some(b)),
             None => (Some(self.initial), None),
@@ -213,7 +225,7 @@ impl HangulBlock {
             Some(c) => match decompose_composite_final(c) {
                 Some((a, b)) => (Some(a), Some(b)),
                 None => (Some(c), None),
-            }
+            },
             None => (None, None),
         };
         Ok((i1, i2, v1, v2, f1, f2))

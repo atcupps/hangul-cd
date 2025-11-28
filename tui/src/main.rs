@@ -39,8 +39,7 @@ impl App {
     fn new() -> Self {
         Self {
             composer: HangulWordComposer::new(),
-            status: "Mock Korean keyboard: type roman keys, Esc to quit"
-                .to_string(),
+            status: "Mock Korean keyboard: type roman keys, Esc to quit".to_string(),
         }
     }
 
