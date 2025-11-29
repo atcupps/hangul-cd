@@ -1,0 +1,1 @@
+This directory contains a basic TUI to demo using the hangul-cd string composition features. The TUI mimics a Korean IME by allowing you to compose Hangul syllable blocks and other characters on your keyboard. To use it, run `cargo run` in this directory and type using your keyboard.
