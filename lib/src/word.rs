@@ -66,7 +66,7 @@ impl HangulWordComposer {
     /// valid Hangul syllable; otherwise, it completes the current block and
     /// creates a new block with the pushed character.
     pub fn push_char(&mut self, c: char) -> WordPushResult {
-        match determine_hangul(c) {
+        match Character::from_char(c) {
             Character::Hangul(hl) => self.push(&hl),
             Character::NonHangul(_) => WordPushResult::NonHangul,
         }

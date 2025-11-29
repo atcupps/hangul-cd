@@ -163,58 +163,6 @@ pub fn decompose_composite_final(c: char) -> Option<(char, char)> {
     }
 }
 
-/// Determines the type of Hangul letter for a given character.
-/// Does not work for archaic or non-standard jamo like ᅀ.
-/// Classifies a character as Hangul jamo or non-Hangul.
-/// 
-/// **Example:**
-/// ```rust
-/// use hangul::jamo::{determine_hangul, Character, Jamo};
-/// 
-/// // Valid Hangul consonant
-/// assert_eq!(
-///     determine_hangul('ㄱ'),
-///     Character::Hangul(Jamo::Consonant('ㄱ'))
-/// );
-/// 
-/// // Valid Hangul vowel
-/// assert_eq!(
-///     determine_hangul('ㅏ'),
-///     Character::Hangul(Jamo::Vowel('ㅏ'))
-/// );
-/// 
-/// // Valid composite consonant
-/// assert_eq!(
-///     determine_hangul('ㄲ'),
-///     Character::Hangul(Jamo::CompositeConsonant('ㄲ'))
-/// );
-/// 
-/// // Valid composite vowel
-/// assert_eq!(
-///     determine_hangul('ㅘ'),
-///     Character::Hangul(Jamo::CompositeVowel('ㅘ'))
-/// );
-/// 
-/// // Non-Hangul character
-/// assert_eq!(
-///     determine_hangul('A'),
-///     Character::NonHangul('A')
-/// );
-/// ```
-pub fn determine_hangul(c: char) -> Character {
-    return if CONSONANTS.contains(c) {
-        Character::Hangul(Jamo::Consonant(c))
-    } else if VOWELS.contains(c) {
-        Character::Hangul(Jamo::Vowel(c))
-    } else if COMPOSITE_CONSONANTS.contains(c) {
-        Character::Hangul(Jamo::CompositeConsonant(c))
-    } else if COMPOSITE_VOWELS.contains(c) {
-        Character::Hangul(Jamo::CompositeVowel(c))
-    } else {
-        Character::NonHangul(c)
-    };
-}
-
 pub(crate) fn is_valid_double_initial(c: char) -> bool {
     INITIAL_COMPOSITE_CONSONANTS.contains(c)
 }
@@ -388,6 +336,61 @@ pub enum Character {
     Hangul(Jamo),
 }
 
+impl Character {
+    /// Determines the type of Hangul letter for a given character.
+    /// Does not work for archaic or non-standard jamo like ᅀ.
+    /// Classifies a character as Hangul jamo or non-Hangul and
+    /// returns the appropriate `Character` enum variant.
+    /// 
+    /// **Example:**
+    /// ```rust
+    /// use hangul::jamo::{Character, Jamo};
+    /// 
+    /// // Valid Hangul consonant
+    /// assert_eq!(
+    ///     Character::from_char('ㄱ'),
+    ///     Character::Hangul(Jamo::Consonant('ㄱ'))
+    /// );
+    /// 
+    /// // Valid Hangul vowel
+    /// assert_eq!(
+    ///     Character::from_char('ㅏ'),
+    ///     Character::Hangul(Jamo::Vowel('ㅏ'))
+    /// );
+    /// 
+    /// // Valid composite consonant
+    /// assert_eq!(
+    ///     Character::from_char('ㄲ'),
+    ///     Character::Hangul(Jamo::CompositeConsonant('ㄲ'))
+    /// );
+    /// 
+    /// // Valid composite vowel
+    /// assert_eq!(
+    ///     Character::from_char('ㅘ'),
+    ///     Character::Hangul(Jamo::CompositeVowel('ㅘ'))
+    /// );
+    /// 
+    /// // Non-Hangul character
+    /// assert_eq!(
+    ///     Character::from_char('A'),
+    ///     Character::NonHangul('A')
+    /// );
+    /// ```
+    pub fn from_char(c: char) -> Character {
+        if CONSONANTS.contains(c) {
+            Character::Hangul(Jamo::Consonant(c))
+        } else if VOWELS.contains(c) {
+            Character::Hangul(Jamo::Vowel(c))
+        } else if COMPOSITE_CONSONANTS.contains(c) {
+            Character::Hangul(Jamo::CompositeConsonant(c))
+        } else if COMPOSITE_VOWELS.contains(c) {
+            Character::Hangul(Jamo::CompositeVowel(c))
+        } else {
+            Character::NonHangul(c)
+        }
+    }
+}
+
 /// An enum representing the different types of Hangul Jamo characters:
 /// consonants, composite consonants, vowels, and composite vowels.
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -413,6 +416,95 @@ impl Jamo {
             | Jamo::CompositeConsonant(c)
             | Jamo::Vowel(c)
             | Jamo::CompositeVowel(c) => *c,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn character_from_char_identifies_valid_consonants() {
+        let consonants = "ㅂㅈㄷㄱㅅㅁㄴㅇㄹㅎㅋㅌㅊㅍ";
+        for c in consonants.chars() {
+            let result = Character::from_char(c);
+            assert!(
+                result == Character::Hangul(Jamo::Consonant(c)),
+                "Failed on consonant: {}; got result: {:?}",
+                c,
+                result
+            );
+        }
+    }
+
+    #[test]
+    fn character_from_char_identifies_valid_vowels() {
+        let vowels = "ㅛㅕㅑㅐㅔㅒㅖㅗㅓㅏㅣㅠㅜㅡ";
+        for c in vowels.chars() {
+            let result = Character::from_char(c);
+            assert!(
+                result == Character::Hangul(Jamo::Vowel(c)),
+                "Failed on vowel: {}; got result: {:?}",
+                c,
+                result
+            );
+        }
+    }
+
+    #[test]
+    fn character_from_char_identifies_double_initials() {
+        let compound_letters = "ㄲㄸㅃㅆㅉ";
+        for c in compound_letters.chars() {
+            let result = Character::from_char(c);
+            assert!(
+                result == Character::Hangul(Jamo::CompositeConsonant(c)),
+                "Failed on compound letter: {}; got result: {:?}",
+                c,
+                result
+            );
+        }
+    }
+
+    #[test]
+    fn character_from_char_identifies_composite_vowels() {
+        let compound_letters = "ㅘㅙㅚㅝㅞㅟㅢ";
+        for c in compound_letters.chars() {
+            let result = Character::from_char(c);
+            assert!(
+                result == Character::Hangul(Jamo::CompositeVowel(c)),
+                "Failed on compound letter: {}; got result: {:?}",
+                c,
+                result
+            );
+        }
+    }
+
+    #[test]
+    fn character_from_char_identifies_composite_finals() {
+        let compound_letters = "ㄲㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄ";
+        for c in compound_letters.chars() {
+            let result = Character::from_char(c);
+            assert!(
+                result == Character::Hangul(Jamo::CompositeConsonant(c)),
+                "Failed on compound letter: {}; got result: {:?}",
+                c,
+                result
+            );
+        }
+    }
+
+    #[test]
+    fn character_from_char_identifies_non_hangul() {
+        let non_hangul_chars = "ABCxyz123!@# ";
+        for c in non_hangul_chars.chars() {
+            let result = Character::from_char(c);
+            assert!(
+                result == Character::NonHangul(c),
+                "Failed on non-Hangul char: {}; got result: {:?}",
+                c,
+                result
+            );
         }
     }
 }
