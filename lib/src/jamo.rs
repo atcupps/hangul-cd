@@ -389,6 +389,14 @@ impl Character {
             Character::NonHangul(c)
         }
     }
+
+    /// Returns the Jamo if the character is a Hangul jamo, or `None` otherwise.
+    pub fn jamo(&self) -> Option<&Jamo> {
+        match self {
+            Character::Hangul(jamo) => Some(jamo),
+            Character::NonHangul(_) => None,
+        }
+    }
 }
 
 /// An enum representing the different types of Hangul Jamo characters:
