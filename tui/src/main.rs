@@ -1,6 +1,7 @@
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use hangul::jamo::{determine_hangul, Jamo, Character};
+use hangul::string::StringComposer;
 use hangul::word::{HangulWordComposer, WordPushResult};
 use ratatui::layout::{Constraint, Layout};
 use ratatui::style::{Style, Stylize};
@@ -31,14 +32,14 @@ fn run(mut terminal: DefaultTerminal) -> Result<()> {
 
 #[derive(Debug)]
 struct App {
-    composer: HangulWordComposer,
+    composer: StringComposer,
     status: String,
 }
 
 impl App {
     fn new() -> Self {
         Self {
-            composer: HangulWordComposer::new(),
+            composer: StringComposer::new(),
             status: "Mock Korean keyboard: type roman keys, Esc to quit".to_string(),
         }
     }
@@ -63,28 +64,20 @@ impl App {
         }
     }
 
-    fn clear(&mut self) {
-        self.composer = HangulWordComposer::new();
-        self.status = "Cleared composition".to_string();
-    }
-
     fn handle_char(&mut self, key_char: char) {
-        let Some(jamo_char) = map_key_to_jamo(key_char) else {
-            self.status = format!("Unmapped key '{key_char}' (use 2-beolsik layout keys)");
-            return;
+        let input = match map_key_to_jamo(key_char) {
+            Some(c) => c,
+            None => key_char,
         };
 
-        let letter = match determine_hangul(jamo_char) {
-            Character::Hangul(l) => Some(l),
-            Character::NonHangul(_) => None,
-        };
-
-        let result = self.composer.push_char(jamo_char);
-        self.status = match result {
-            WordPushResult::Continue => format!("Added '{jamo_char}'"),
-            WordPushResult::InvalidHangul => format!("Invalid Hangul combination with '{jamo_char}'"),
-            WordPushResult::NonHangul => format!("Ignored non-Hangul input '{jamo_char}'"),
-        };
+        match self.composer.push_char(input) {
+            Ok(()) => {
+                self.status = format!("Added '{input}'");
+            }
+            Err(err) => {
+                self.status = format!("Error adding '{input}': {err}");
+            }
+        }
     }
 }
 
@@ -138,6 +131,9 @@ fn handle_key(app: &mut App, key: KeyEvent) -> bool {
         KeyCode::Esc => return true,
         KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => return true,
         KeyCode::Backspace => app.backspace(),
+        KeyCode::Enter => {
+            app.handle_char('\n');
+        }
         KeyCode::Char(c) => app.handle_char(c),
         _ => {}
     }

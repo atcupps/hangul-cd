@@ -1,5 +1,6 @@
 use crate::word::*;
 
+#[derive(Debug)]
 pub struct StringComposer {
     completed: String,
     current: HangulWordComposer,
@@ -25,6 +26,16 @@ impl StringComposer {
         let current_string = self.current.as_string()?;
         result.push_str(&current_string);
         Ok(result)
+    }
+
+    pub fn pop(&mut self) -> Result<Option<char>, String> {
+        match self.current.pop()? {
+            Some(c) => Ok(Some(c.get_char())),
+            None => match self.completed.pop() {
+                Some(c) => Ok(Some(c)),
+                None => Ok(None),
+            }
+        }
     }
 
     fn handle_invalid_input(&mut self, c: char) -> Result<(), String> {
@@ -81,5 +92,19 @@ mod test {
         }
         let result = composer.as_string().unwrap();
         assert_eq!(result, "한글 123  \n 안녕!".to_string());
+    }
+
+    #[test]
+    fn test_backspace() {
+        let input = "ㅇㅏㄴㄴㅕㅇ ㄹㅏㅁㅕㄴ";
+        let mut composer = StringComposer::new();
+        for c in input.chars() {
+            composer.push_char(c).unwrap();
+        }
+        for _ in 0..7 {
+            composer.pop().unwrap();
+        }
+        let result = composer.as_string().unwrap();
+        assert_eq!(result, "안".to_string());
     }
 }
