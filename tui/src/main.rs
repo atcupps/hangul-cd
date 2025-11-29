@@ -1,7 +1,7 @@
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use hangul::jamo::{determine_hangul, Jamo, Character};
-use hangul::compose::{HangulWordComposer, PushResult};
+use hangul::word::{HangulWordComposer, WordPushResult};
 use ratatui::layout::{Constraint, Layout};
 use ratatui::style::{Style, Stylize};
 use ratatui::widgets::{Block, Borders, Padding, Paragraph};
@@ -81,13 +81,9 @@ impl App {
 
         let result = self.composer.push_char(jamo_char);
         self.status = match result {
-            PushResult::Success => format!("Added '{jamo_char}'"),
-            PushResult::InvalidHangul => format!("Invalid Hangul combination with '{jamo_char}'"),
-            PushResult::NonHangul => format!("Ignored non-Hangul input '{jamo_char}'"),
-            PushResult::StartNewBlockNoPop => handle_start_new_block(&mut self.composer, letter),
-            PushResult::PopAndStartNewBlock => {
-                handle_pop_and_start_new_block(&mut self.composer, letter)
-            }
+            WordPushResult::Continue => format!("Added '{jamo_char}'"),
+            WordPushResult::InvalidHangul => format!("Invalid Hangul combination with '{jamo_char}'"),
+            WordPushResult::NonHangul => format!("Ignored non-Hangul input '{jamo_char}'"),
         };
     }
 }
@@ -130,32 +126,6 @@ fn map_key_to_jamo(key_char: char) -> Option<char> {
         'm' => Some('ㅡ'),
         'l' => Some('ㅣ'),
         _ => None,
-    }
-}
-
-fn handle_start_new_block(
-    composer: &mut HangulWordComposer,
-    letter: Option<Jamo>,
-) -> String {
-    match letter {
-        Some(l) => match composer.start_new_block(l) {
-            Ok(()) => "Started a new syllable".to_string(),
-            Err(err) => format!("Error starting new block: {err}"),
-        },
-        None => "Could not start a new block from non-Hangul input".to_string(),
-    }
-}
-
-fn handle_pop_and_start_new_block(
-    composer: &mut HangulWordComposer,
-    letter: Option<Jamo>,
-) -> String {
-    match letter {
-        Some(l) => match composer.pop_and_start_new_block(l) {
-            Ok(()) => "Moved trailing consonant to next syllable".to_string(),
-            Err(err) => format!("Error moving trailing consonant: {err}"),
-        },
-        None => "Could not move trailing consonant from non-Hangul input".to_string(),
     }
 }
 

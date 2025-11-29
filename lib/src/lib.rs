@@ -1,3 +1,4 @@
 pub mod block;
-pub mod compose;
+pub mod word;
 pub mod jamo;
+pub mod string;
