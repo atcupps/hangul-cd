@@ -28,6 +28,7 @@ pub(crate) const T_BASE: u32 = 0x11A7;
 pub(crate) const V_COUNT: u32 = 21;
 pub(crate) const T_COUNT: u32 = 28;
 pub(crate) const N_COUNT: u32 = V_COUNT * T_COUNT;
+pub(crate) const S_COUNT: u32 = 11172;
 
 /// Converts compatibility jamo to modern jamo, specifically for
 /// initial consonants or initial composite consonants.

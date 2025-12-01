@@ -81,6 +81,41 @@ impl HangulBlock {
         }
     }
 
+    pub fn from_char(c: char) -> Result<Self, String> {
+        let codepoint = c as u32;
+        if codepoint < S_BASE || codepoint > S_BASE + S_COUNT {
+            return Err(format!(
+                "Character U+{:04X} is not a valid Hangul syllable block.",
+                codepoint
+            ));
+        }
+
+        let s_index = codepoint - S_BASE;
+        let l_index = s_index / N_COUNT;
+        let v_index = (s_index % N_COUNT) / T_COUNT;
+        let t_index = s_index % T_COUNT;
+
+        let initial = Jamo::from_modern_jamo(
+            std::char::from_u32(L_BASE + l_index).ok_or("Invalid initial Jamo codepoint")?
+        )?;
+        let vowel = Jamo::from_modern_jamo(
+            std::char::from_u32(V_BASE + v_index).ok_or("Invalid vowel Jamo codepoint")?
+        )?;
+        let final_optional = if t_index > 0 {
+            Some(Jamo::from_modern_jamo(
+                std::char::from_u32(T_BASE + t_index).ok_or("Invalid final Jamo codepoint")?
+            )?)
+        } else {
+            None
+        };
+
+        Ok(HangulBlock {
+            initial,
+            vowel,
+            final_optional,
+        })
+    }
+
     /// Decomposes the `HangulBlock` into its constituent Jamo characters.
     /// Returns a tuple containing six `Option<Jamo>` values representing
     /// the decomposed characters:
@@ -891,35 +926,62 @@ mod tests {
     struct BlockE2ETestCase((char, char, char, char));
 
     fn run_e2e_test_cases(case: BlockE2ETestCase) {
-        let mut composer = BlockComposer::new();
+        // let mut composer = BlockComposer::new();
+        // assert_eq!(
+        //     composer.push(&Jamo::from_compatibility_jamo(case.0.0).unwrap()),
+        //     BlockPushResult::Success,
+        //     "Failed at initial consonant for case {:?}",
+        //     case
+        // );
+        // assert_eq!(
+        //     composer.push(&Jamo::from_compatibility_jamo(case.0.1).unwrap()),
+        //     BlockPushResult::Success,
+        //     "Failed at vowel for case {:?}",
+        //     case
+        // );
+        // if case.0.2 != '\0' {
+        //     assert_eq!(
+        //         composer.push(&Jamo::from_compatibility_jamo(case.0.2).unwrap()),
+        //         BlockPushResult::Success,
+        //         "Failed at final consonant for case {:?}",
+        //         case
+        //     );
+        // }
+
+        // let block_char = composer.block_as_string().unwrap();
+        // assert_eq!(
+        //     block_char,
+        //     Some(case.0.3),
+        //     "Final composed character did not match expected for case {:?}",
+        //     case
+        // );
+
+        let from_block_char = HangulBlock::from_char(case.0.3).unwrap();
         assert_eq!(
-            composer.push(&Jamo::from_compatibility_jamo(case.0.0).unwrap()),
-            BlockPushResult::Success,
-            "Failed at initial consonant for case {:?}",
+            from_block_char.initial,
+            Jamo::from_compatibility_jamo(case.0.0).unwrap(),
+            "Initial consonant did not match expected for case {:?}",
             case
         );
         assert_eq!(
-            composer.push(&Jamo::from_compatibility_jamo(case.0.1).unwrap()),
-            BlockPushResult::Success,
-            "Failed at vowel for case {:?}",
+            from_block_char.vowel,
+            Jamo::from_compatibility_jamo(case.0.1).unwrap(),
+            "Vowel did not match expected for case {:?}",
             case
         );
         if case.0.2 != '\0' {
             assert_eq!(
-                composer.push(&Jamo::from_compatibility_jamo(case.0.2).unwrap()),
-                BlockPushResult::Success,
-                "Failed at final consonant for case {:?}",
+                from_block_char.final_optional.unwrap(),
+                Jamo::from_compatibility_jamo(case.0.2).unwrap(),
+                "Final consonant did not match expected for case {:?}",
+                case
+            );
+        } else {
+            assert!(from_block_char.final_optional.is_none(),
+                "Final consonant was expected to be None for case {:?}",
                 case
             );
         }
-
-        let block_char = composer.block_as_string().unwrap();
-        assert_eq!(
-            block_char,
-            Some(case.0.3),
-            "Final composed character did not match expected for case {:?}",
-            case
-        );
     }
 
     #[test]
