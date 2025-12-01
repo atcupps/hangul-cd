@@ -303,7 +303,7 @@ impl Character {
     /// // Valid composite consonant
     /// assert_eq!(
     ///     Character::from_char('ㄲ').unwrap(),
-    ///     Character::Hangul(Jamo::CompositeConsonant(JamoConsonantComposite::GiyeokGiyeok))
+    ///     Character::Hangul(Jamo::CompositeConsonant(JamoConsonantComposite::SsangGiyeok))
     /// );
     ///
     /// // Valid composite vowel
@@ -444,11 +444,11 @@ impl JamoConsonantSingular {
 
     pub fn combine_for_initial(&self, other: &JamoConsonantSingular) -> Option<JamoConsonantComposite> {
         match (self, other) {
-            (JamoConsonantSingular::Giyeok, JamoConsonantSingular::Giyeok) => Some(JamoConsonantComposite::GiyeokGiyeok),
-            (JamoConsonantSingular::Digeut, JamoConsonantSingular::Digeut) => Some(JamoConsonantComposite::DigeutDigeut),
-            (JamoConsonantSingular::Bieup, JamoConsonantSingular::Bieup) => Some(JamoConsonantComposite::BieupBieup),
-            (JamoConsonantSingular::Siot, JamoConsonantSingular::Siot) => Some(JamoConsonantComposite::SiotSiot),
-            (JamoConsonantSingular::Jieut, JamoConsonantSingular::Jieut) => Some(JamoConsonantComposite::JieutJieut),
+            (JamoConsonantSingular::Giyeok, JamoConsonantSingular::Giyeok) => Some(JamoConsonantComposite::SsangGiyeok),
+            (JamoConsonantSingular::Digeut, JamoConsonantSingular::Digeut) => Some(JamoConsonantComposite::SsangDigeut),
+            (JamoConsonantSingular::Bieup, JamoConsonantSingular::Bieup) => Some(JamoConsonantComposite::SsangBieup),
+            (JamoConsonantSingular::Siot, JamoConsonantSingular::Siot) => Some(JamoConsonantComposite::SsangSiot),
+            (JamoConsonantSingular::Jieut, JamoConsonantSingular::Jieut) => Some(JamoConsonantComposite::SsangJieut),
             _ => None,
         }
     }
@@ -465,8 +465,8 @@ impl JamoConsonantSingular {
             (JamoConsonantSingular::Rieul, JamoConsonantSingular::Tieut) => Some(JamoConsonantComposite::RieulTieut),
             (JamoConsonantSingular::Rieul, JamoConsonantSingular::Pieup) => Some(JamoConsonantComposite::RieulPieup),
             (JamoConsonantSingular::Rieul, JamoConsonantSingular::Hieut) => Some(JamoConsonantComposite::RieulHieut),
-            (JamoConsonantSingular::Giyeok, JamoConsonantSingular::Giyeok) => Some(JamoConsonantComposite::GiyeokGiyeok),
-            (JamoConsonantSingular::Siot, JamoConsonantSingular::Siot) => Some(JamoConsonantComposite::SiotSiot),
+            (JamoConsonantSingular::Giyeok, JamoConsonantSingular::Giyeok) => Some(JamoConsonantComposite::SsangGiyeok),
+            (JamoConsonantSingular::Siot, JamoConsonantSingular::Siot) => Some(JamoConsonantComposite::SsangSiot),
             (JamoConsonantSingular::Bieup, JamoConsonantSingular::Siot) => Some(JamoConsonantComposite::BieupSiot),
             _ => None,
         }
@@ -496,15 +496,15 @@ pub enum JamoConsonantComposite {
     /// ㅀ
     RieulHieut,
     /// ㄲ
-    GiyeokGiyeok,
+    SsangGiyeok,
     /// ㄸ
-    DigeutDigeut,
+    SsangDigeut,
     /// ㅃ
-    BieupBieup,
+    SsangBieup,
     /// ㅆ
-    SiotSiot,
+    SsangSiot,
     /// ㅉ
-    JieutJieut,
+    SsangJieut,
     /// ㅄ
     BieupSiot,
 }
@@ -512,11 +512,11 @@ pub enum JamoConsonantComposite {
 impl JamoConsonantComposite {
     pub fn char_modern_initial(&self) -> Option<char> {
         match self {
-            JamoConsonantComposite::GiyeokGiyeok => Some('\u{1101}'),
-            JamoConsonantComposite::DigeutDigeut => Some('\u{1104}'),
-            JamoConsonantComposite::BieupBieup => Some('\u{1108}'),
-            JamoConsonantComposite::SiotSiot => Some('\u{110A}'),
-            JamoConsonantComposite::JieutJieut => Some('\u{110D}'),
+            JamoConsonantComposite::SsangGiyeok => Some('\u{1101}'),
+            JamoConsonantComposite::SsangDigeut => Some('\u{1104}'),
+            JamoConsonantComposite::SsangBieup => Some('\u{1108}'),
+            JamoConsonantComposite::SsangSiot => Some('\u{110A}'),
+            JamoConsonantComposite::SsangJieut => Some('\u{110D}'),
             _ => None,
         }
     }
@@ -533,8 +533,8 @@ impl JamoConsonantComposite {
             JamoConsonantComposite::RieulTieut => Some('\u{11B4}'),
             JamoConsonantComposite::RieulPieup => Some('\u{11B5}'),
             JamoConsonantComposite::RieulHieut => Some('\u{11B6}'),
-            JamoConsonantComposite::GiyeokGiyeok => Some('\u{11A9}'),
-            JamoConsonantComposite::SiotSiot => Some('\u{11BB}'),
+            JamoConsonantComposite::SsangGiyeok => Some('\u{11A9}'),
+            JamoConsonantComposite::SsangSiot => Some('\u{11BB}'),
             JamoConsonantComposite::BieupSiot => Some('\u{11B9}'),
             _ => None,
         }
@@ -552,11 +552,11 @@ impl JamoConsonantComposite {
             JamoConsonantComposite::RieulTieut => 'ㄾ',
             JamoConsonantComposite::RieulPieup => 'ㄿ',
             JamoConsonantComposite::RieulHieut => 'ㅀ',
-            JamoConsonantComposite::GiyeokGiyeok => 'ㄲ',
-            JamoConsonantComposite::DigeutDigeut => 'ㄸ',
-            JamoConsonantComposite::BieupBieup => 'ㅃ',
-            JamoConsonantComposite::SiotSiot => 'ㅆ',
-            JamoConsonantComposite::JieutJieut => 'ㅉ',
+            JamoConsonantComposite::SsangGiyeok => 'ㄲ',
+            JamoConsonantComposite::SsangDigeut => 'ㄸ',
+            JamoConsonantComposite::SsangBieup => 'ㅃ',
+            JamoConsonantComposite::SsangSiot => 'ㅆ',
+            JamoConsonantComposite::SsangJieut => 'ㅉ',
             JamoConsonantComposite::BieupSiot => 'ㅄ',
         }
     }
@@ -603,23 +603,23 @@ impl JamoConsonantComposite {
                 Jamo::Consonant(JamoConsonantSingular::Rieul),
                 Jamo::Consonant(JamoConsonantSingular::Hieut),
             ),
-            JamoConsonantComposite::GiyeokGiyeok => (
+            JamoConsonantComposite::SsangGiyeok => (
                 Jamo::Consonant(JamoConsonantSingular::Giyeok),
                 Jamo::Consonant(JamoConsonantSingular::Giyeok),
             ),
-            JamoConsonantComposite::DigeutDigeut => (
+            JamoConsonantComposite::SsangDigeut => (
                 Jamo::Consonant(JamoConsonantSingular::Digeut),
                 Jamo::Consonant(JamoConsonantSingular::Digeut),
             ),
-            JamoConsonantComposite::BieupBieup => (
+            JamoConsonantComposite::SsangBieup => (
                 Jamo::Consonant(JamoConsonantSingular::Bieup),
                 Jamo::Consonant(JamoConsonantSingular::Bieup),
             ),
-            JamoConsonantComposite::SiotSiot => (
+            JamoConsonantComposite::SsangSiot => (
                 Jamo::Consonant(JamoConsonantSingular::Siot),
                 Jamo::Consonant(JamoConsonantSingular::Siot),
             ),
-            JamoConsonantComposite::JieutJieut => (
+            JamoConsonantComposite::SsangJieut => (
                 Jamo::Consonant(JamoConsonantSingular::Jieut),
                 Jamo::Consonant(JamoConsonantSingular::Jieut),
             ),
@@ -632,11 +632,11 @@ impl JamoConsonantComposite {
 
     pub fn is_valid_initial(&self) -> bool {
         match self {
-            JamoConsonantComposite::GiyeokGiyeok
-            | JamoConsonantComposite::DigeutDigeut
-            | JamoConsonantComposite::BieupBieup
-            | JamoConsonantComposite::SiotSiot
-            | JamoConsonantComposite::JieutJieut => true,
+            JamoConsonantComposite::SsangGiyeok
+            | JamoConsonantComposite::SsangDigeut
+            | JamoConsonantComposite::SsangBieup
+            | JamoConsonantComposite::SsangSiot
+            | JamoConsonantComposite::SsangJieut => true,
             _ => false,
         }
     }
@@ -653,8 +653,8 @@ impl JamoConsonantComposite {
             | JamoConsonantComposite::RieulTieut
             | JamoConsonantComposite::RieulPieup
             | JamoConsonantComposite::RieulHieut
-            | JamoConsonantComposite::GiyeokGiyeok
-            | JamoConsonantComposite::SiotSiot
+            | JamoConsonantComposite::SsangGiyeok
+            | JamoConsonantComposite::SsangSiot
             | JamoConsonantComposite::BieupSiot => true,
             _ => false,
         }
@@ -909,11 +909,11 @@ impl Jamo {
             'ㄾ' => Ok(Jamo::CompositeConsonant(JamoConsonantComposite::RieulTieut)),
             'ㄿ' => Ok(Jamo::CompositeConsonant(JamoConsonantComposite::RieulPieup)),
             'ㅀ' => Ok(Jamo::CompositeConsonant(JamoConsonantComposite::RieulHieut)),
-            'ㄲ' => Ok(Jamo::CompositeConsonant(JamoConsonantComposite::GiyeokGiyeok)),
-            'ㄸ' => Ok(Jamo::CompositeConsonant(JamoConsonantComposite::DigeutDigeut)),
-            'ㅃ' => Ok(Jamo::CompositeConsonant(JamoConsonantComposite::BieupBieup)),
-            'ㅆ' => Ok(Jamo::CompositeConsonant(JamoConsonantComposite::SiotSiot)),
-            'ㅉ' => Ok(Jamo::CompositeConsonant(JamoConsonantComposite::JieutJieut)),
+            'ㄲ' => Ok(Jamo::CompositeConsonant(JamoConsonantComposite::SsangGiyeok)),
+            'ㄸ' => Ok(Jamo::CompositeConsonant(JamoConsonantComposite::SsangDigeut)),
+            'ㅃ' => Ok(Jamo::CompositeConsonant(JamoConsonantComposite::SsangBieup)),
+            'ㅆ' => Ok(Jamo::CompositeConsonant(JamoConsonantComposite::SsangSiot)),
+            'ㅉ' => Ok(Jamo::CompositeConsonant(JamoConsonantComposite::SsangJieut)),
             'ㅄ' => Ok(Jamo::CompositeConsonant(JamoConsonantComposite::BieupSiot)),
 
             // Singular vowels
@@ -1073,11 +1073,11 @@ mod tests {
     #[test]
     fn character_from_char_identifies_double_initials_compatibility() {
         let tests = vec![
-            ('ㄲ', Jamo::CompositeConsonant(JamoConsonantComposite::GiyeokGiyeok)),
-            ('ㄸ', Jamo::CompositeConsonant(JamoConsonantComposite::DigeutDigeut)),
-            ('ㅃ', Jamo::CompositeConsonant(JamoConsonantComposite::BieupBieup)),
-            ('ㅆ', Jamo::CompositeConsonant(JamoConsonantComposite::SiotSiot)),
-            ('ㅉ', Jamo::CompositeConsonant(JamoConsonantComposite::JieutJieut)),
+            ('ㄲ', Jamo::CompositeConsonant(JamoConsonantComposite::SsangGiyeok)),
+            ('ㄸ', Jamo::CompositeConsonant(JamoConsonantComposite::SsangDigeut)),
+            ('ㅃ', Jamo::CompositeConsonant(JamoConsonantComposite::SsangBieup)),
+            ('ㅆ', Jamo::CompositeConsonant(JamoConsonantComposite::SsangSiot)),
+            ('ㅉ', Jamo::CompositeConsonant(JamoConsonantComposite::SsangJieut)),
         ];
         for (c, expected_jamo) in tests {
             let result = Character::from_char(c);
@@ -1094,11 +1094,11 @@ mod tests {
     #[test]
     fn character_from_char_identifies_double_initials_modern() {
         let tests = vec![
-            ('ᄁ', Jamo::CompositeConsonant(JamoConsonantComposite::GiyeokGiyeok)),
-            ('ᄄ', Jamo::CompositeConsonant(JamoConsonantComposite::DigeutDigeut)),
-            ('ᄈ', Jamo::CompositeConsonant(JamoConsonantComposite::BieupBieup)),
-            ('ᄊ', Jamo::CompositeConsonant(JamoConsonantComposite::SiotSiot)),
-            ('ᄍ', Jamo::CompositeConsonant(JamoConsonantComposite::JieutJieut)),
+            ('ᄁ', Jamo::CompositeConsonant(JamoConsonantComposite::SsangGiyeok)),
+            ('ᄄ', Jamo::CompositeConsonant(JamoConsonantComposite::SsangDigeut)),
+            ('ᄈ', Jamo::CompositeConsonant(JamoConsonantComposite::SsangBieup)),
+            ('ᄊ', Jamo::CompositeConsonant(JamoConsonantComposite::SsangSiot)),
+            ('ᄍ', Jamo::CompositeConsonant(JamoConsonantComposite::SsangJieut)),
         ];
         for (c, expected_jamo) in tests {
             let result = Character::from_char(c);
