@@ -37,7 +37,8 @@ impl HangulBlock {
     /// Converts the `HangulBlock` into a composed Hangul syllable unicode
     /// character. Assumes all chars are valid Jamo. If the block cannot be
     /// converted into a valid Hangul syllable, returns an `Err` with the
-    /// problematic unicode code point.
+    /// problematic unicode code point, or 0 if the conversion fails for
+    /// other reasons.
     pub fn to_char(&self) -> Result<char, u32> {
         // Ensure the initial, vowel, and final are modern Jamo and not
         // compatibility jamo
@@ -81,7 +82,7 @@ impl HangulBlock {
     }
 
     /// Decomposes the `HangulBlock` into its constituent Jamo characters.
-    /// Returns a tuple containing six `Option<char>` values representing
+    /// Returns a tuple containing six `Option<Jamo>` values representing
     /// the decomposed characters:
     /// - First initial consonant
     /// - Second initial consonant (if composite)

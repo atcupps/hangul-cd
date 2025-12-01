@@ -60,10 +60,21 @@ impl HangulWordComposer {
         }
     }
 
-    /// Pushes a character into the `HangulWordComposer`.
-    /// Pushing appends to the current syllable block if that would make a
-    /// valid Hangul syllable; otherwise, it completes the current block and
-    /// creates a new block with the pushed character.
+    /// Pushes a character into the `HangulWordComposer` if valid and returns a
+    /// result indicating the outcome.
+    /// 
+    /// If pushing would make a valid Hangul syllable, the new character is
+    /// appended and `WordPushResult::Continue` is returned.
+    /// 
+    /// If pushing the character would result in an invalid Hangul syllable,
+    /// but the character is Hangul and can start a new syllable block, the current
+    /// block is completed, a new block is started with the pushed character,
+    /// and `WordPushResult::Continue` is returned.
+    /// 
+    /// If the character is Hangul but cannot form a valid syllable in either
+    /// the current or a new block, `WordPushResult::InvalidHangul` is returned.
+    /// 
+    /// If the character is not Hangul, `WordPushResult::NonHangul` is returned.
     pub fn push_char(&mut self, c: char) -> Result<WordPushResult, String> {
         match Character::from_char(c)? {
             Character::Hangul(jamo) => self.push(&jamo),
