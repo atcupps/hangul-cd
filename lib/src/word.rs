@@ -26,9 +26,18 @@ use crate::{block::*, jamo::*};
 /// assert_eq!(result, "안녕".to_string());
 ///
 /// // Popping characters removes jamo in reverse order
-/// assert_eq!(composer.pop().unwrap(), Some(Jamo::Consonant(JamoConsonantSingular::Ieung)));
-/// assert_eq!(composer.pop().unwrap(), Some(Jamo::Vowel(JamoVowelSingular::Yeo)));
-/// assert_eq!(composer.pop().unwrap(), Some(Jamo::Consonant(JamoConsonantSingular::Nieun)));
+/// assert_eq!(
+///     composer.pop().unwrap(),
+///     Some(Jamo::Consonant(JamoConsonantSingular::Ieung))
+/// );
+/// assert_eq!(
+///     composer.pop().unwrap(),
+///     Some(Jamo::Vowel(JamoVowelSingular::Yeo))
+/// );
+/// assert_eq!(
+///     composer.pop().unwrap(),
+///     Some(Jamo::Consonant(JamoConsonantSingular::Nieun))
+/// );
 /// assert_eq!(composer.as_string().unwrap(), "안".to_string());
 /// ```
 #[derive(Debug)]

@@ -290,7 +290,14 @@ impl Character {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::{Character, Jamo, JamoConsonantSingular, JamoVowelSingular, JamoVowelComposite, JamoConsonantComposite};
+    /// use hangul::jamo::{
+    ///     Character,
+    ///     Jamo,
+    ///     JamoConsonantSingular,
+    ///     JamoVowelSingular,
+    ///     JamoVowelComposite,
+    ///     JamoConsonantComposite,
+    /// };
     ///
     /// // Valid Hangul consonant
     /// assert_eq!(

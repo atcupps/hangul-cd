@@ -28,7 +28,13 @@ use std::fmt::Debug;
 /// // Decompose the block into its constituent Jamo characters as a tuple
 /// assert_eq!(
 ///     block.decomposed_tuple().unwrap(),
-///    (Some(Jamo::Consonant(JamoConsonantSingular::Giyeok)), None, Some(Jamo::Vowel(JamoVowelSingular::A)), None, None, None));
+///    (Some(Jamo::Consonant(JamoConsonantSingular::Giyeok)),
+///     None,
+///     Some(Jamo::Vowel(JamoVowelSingular::A)),
+///     None,
+///     None,
+///     None)
+/// );
 ///
 /// // Decompose the block into its constituent Jamo characters as a vector
 /// let options = HangulBlockDecompositionOptions {
@@ -394,9 +400,18 @@ enum BlockCompositionState {
 /// let mut composer = BlockComposer::new();
 ///
 /// // Push letters to form the syllable '강'
-/// assert_eq!(composer.push(&Jamo::Consonant(JamoConsonantSingular::Giyeok)), BlockPushResult::Success);
-/// assert_eq!(composer.push(&Jamo::Vowel(JamoVowelSingular::A)), BlockPushResult::Success);
-/// assert_eq!(composer.push(&Jamo::Consonant(JamoConsonantSingular::Ieung)), BlockPushResult::Success);
+/// assert_eq!(
+///     composer.push(&Jamo::Consonant(JamoConsonantSingular::Giyeok)),
+///     BlockPushResult::Success
+/// );
+/// assert_eq!(
+///     composer.push(&Jamo::Vowel(JamoVowelSingular::A)),
+///     BlockPushResult::Success
+/// );
+/// assert_eq!(
+///     composer.push(&Jamo::Consonant(JamoConsonantSingular::Ieung)),
+///     BlockPushResult::Success
+/// );
 ///
 /// // Try to push another character that would not fit in the current block
 /// assert_eq!(
@@ -494,9 +509,18 @@ impl BlockComposer {
     /// composer.push(&Jamo::from_compatibility_jamo('ㄱ').unwrap());
     /// composer.push(&Jamo::from_compatibility_jamo('ㅏ').unwrap());
     ///
-    /// assert_eq!(composer.pop(), BlockPopStatus::PoppedAndNonEmpty(Jamo::Vowel(JamoVowelSingular::A)));
-    /// assert_eq!(composer.pop(), BlockPopStatus::PoppedAndEmpty(Jamo::Consonant(JamoConsonantSingular::Giyeok)));
-    /// assert_eq!(composer.pop(), BlockPopStatus::None);
+    /// assert_eq!(
+    ///     composer.pop(),
+    ///     BlockPopStatus::PoppedAndNonEmpty(Jamo::Vowel(JamoVowelSingular::A))
+    /// );
+    /// assert_eq!(
+    ///     composer.pop(),
+    ///     BlockPopStatus::PoppedAndEmpty(Jamo::Consonant(JamoConsonantSingular::Giyeok))
+    /// );
+    /// assert_eq!(
+    ///     composer.pop(),
+    ///     BlockPopStatus::None
+    /// );
     /// ```
     pub fn pop(&mut self) -> BlockPopStatus {
         if let Some(c) = self.final_second.take() {
