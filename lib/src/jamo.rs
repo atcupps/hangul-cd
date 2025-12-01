@@ -924,6 +924,28 @@ impl Jamo {
         }
     }
 
+    /// Creates a Jamo from a modern jamo character. There is no need
+    /// to specify the position (initial, vowel, final) of the jamo character.
+    ///
+    /// **Example:**
+    /// ```rust
+    /// use hangul::jamo::{Jamo, JamoConsonantSingular};
+    /// let jamo = Jamo::from_modern_jamo('ᄀ').unwrap();
+    /// assert_eq!(jamo, Jamo::Consonant(JamoConsonantSingular::Giyeok));
+    /// ```
+    pub fn from_modern_jamo(c: char) -> Result<Self, String> {
+        let cc = modern_to_compatibility_jamo(c);
+        Self::from_compatibility_jamo(cc)
+    }
+
+    /// Creates a Jamo from a compatibility jamo character.
+    ///
+    /// **Example:**
+    /// ```rust
+    /// use hangul::jamo::{Jamo, JamoConsonantSingular};
+    /// let jamo = Jamo::from_compatibility_jamo('ㄱ').unwrap();
+    /// assert_eq!(jamo, Jamo::Consonant(JamoConsonantSingular::Giyeok));
+    /// ```
     pub fn from_compatibility_jamo(c: char) -> Result<Self, String> {
         match c {
             // Singular consonants
