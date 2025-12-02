@@ -26,7 +26,7 @@ pub enum StringError {
 ///
 /// **API:**
 /// ```rust
-/// use hangul::string::StringComposer;
+/// use hangul_cd::string::StringComposer;
 ///
 /// let mut composer = StringComposer::new();
 ///

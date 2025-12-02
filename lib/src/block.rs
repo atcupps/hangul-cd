@@ -40,8 +40,8 @@ pub enum BlockError {
 ///
 /// **API:**
 /// ```rust
-/// use hangul::block::{HangulBlock, HangulBlockDecompositionOptions};
-/// use hangul::jamo::{
+/// use hangul_cd::block::{HangulBlock, HangulBlockDecompositionOptions};
+/// use hangul_cd::jamo::{
 ///     Jamo,
 ///     JamoConsonantSingular,
 ///     JamoVowelSingular,
@@ -415,8 +415,8 @@ impl HangulBlock {
 ///
 /// **Example:**
 /// ```rust
-/// use hangul::block::{HangulBlock, HangulBlockDecompositionOptions};
-/// use hangul::jamo::{Jamo, JamoUnicodeType};
+/// use hangul_cd::block::{HangulBlock, HangulBlockDecompositionOptions};
+/// use hangul_cd::jamo::{Jamo, JamoUnicodeType};
 ///
 /// let block = HangulBlock {
 ///    initial: Jamo::from_compatibility_jamo('ㄱ').unwrap(),
@@ -496,8 +496,8 @@ enum BlockCompositionState {
 ///
 /// **API:**
 /// ```rust
-/// use hangul::block::{BlockComposer, BlockPushResult};
-/// use hangul::jamo::{Jamo, JamoConsonantSingular, JamoVowelSingular};
+/// use hangul_cd::block::{BlockComposer, BlockPushResult};
+/// use hangul_cd::jamo::{Jamo, JamoConsonantSingular, JamoVowelSingular};
 ///
 /// let mut composer = BlockComposer::new();
 ///
@@ -602,8 +602,8 @@ impl BlockComposer {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::block::{BlockComposer, BlockPushResult};
-    /// use hangul::jamo::{Jamo, JamoConsonantSingular, JamoVowelSingular};
+    /// use hangul_cd::block::{BlockComposer, BlockPushResult};
+    /// use hangul_cd::jamo::{Jamo, JamoConsonantSingular, JamoVowelSingular};
     ///
     /// let mut composer = BlockComposer::new();
     ///
@@ -641,8 +641,8 @@ impl BlockComposer {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::block::{BlockComposer, BlockPopStatus};
-    /// use hangul::jamo::{Jamo, JamoConsonantSingular, JamoVowelSingular};
+    /// use hangul_cd::block::{BlockComposer, BlockPopStatus};
+    /// use hangul_cd::jamo::{Jamo, JamoConsonantSingular, JamoVowelSingular};
     ///
     /// let mut composer = BlockComposer::new();
     /// composer.push(&Jamo::from_compatibility_jamo('ㄱ').unwrap());
@@ -877,8 +877,8 @@ impl BlockComposer {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::block::{BlockComposer, BlockCompletionStatus, HangulBlock};
-    /// use hangul::jamo::{Jamo, JamoConsonantSingular, JamoVowelSingular};
+    /// use hangul_cd::block::{BlockComposer, BlockCompletionStatus, HangulBlock};
+    /// use hangul_cd::jamo::{Jamo, JamoConsonantSingular, JamoVowelSingular};
     ///
     /// let mut composer = BlockComposer::new();
     ///

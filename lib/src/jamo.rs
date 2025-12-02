@@ -327,7 +327,7 @@ impl Character {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::{
+    /// use hangul_cd::jamo::{
     ///     Character,
     ///     Jamo,
     ///     JamoConsonantSingular,
@@ -445,7 +445,7 @@ impl JamoConsonantSingular {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::{
+    /// use hangul_cd::jamo::{
     ///     JamoConsonantSingular,
     ///     JamoPosition,
     /// };
@@ -505,7 +505,7 @@ impl JamoConsonantSingular {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::JamoConsonantSingular;
+    /// use hangul_cd::jamo::JamoConsonantSingular;
     ///
     /// let siot = JamoConsonantSingular::Siot;
     /// assert_eq!(siot.char_compatibility(), 'ㅅ');
@@ -542,7 +542,7 @@ impl JamoConsonantSingular {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::{
+    /// use hangul_cd::jamo::{
     ///     JamoConsonantSingular,
     ///     JamoConsonantComposite,
     /// };
@@ -596,7 +596,7 @@ impl JamoConsonantSingular {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::{
+    /// use hangul_cd::jamo::{
     ///     JamoConsonantSingular,
     ///     JamoConsonantComposite,
     /// };
@@ -702,7 +702,7 @@ impl JamoConsonantComposite {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::{
+    /// use hangul_cd::jamo::{
     ///     JamoConsonantComposite,
     ///     JamoPosition,
     /// };
@@ -754,7 +754,7 @@ impl JamoConsonantComposite {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::JamoConsonantComposite;
+    /// use hangul_cd::jamo::JamoConsonantComposite;
     ///
     /// let gieok_siot = JamoConsonantComposite::GiyeokSiot;
     /// assert_eq!(gieok_siot.char_compatibility(), 'ㄳ');
@@ -784,7 +784,7 @@ impl JamoConsonantComposite {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::{
+    /// use hangul_cd::jamo::{
     ///     Jamo,
     ///     JamoConsonantSingular,
     ///     JamoConsonantComposite,
@@ -869,7 +869,7 @@ impl JamoConsonantComposite {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::JamoConsonantComposite;
+    /// use hangul_cd::jamo::JamoConsonantComposite;
     ///
     /// let ssang_giyeok = JamoConsonantComposite::SsangGiyeok;
     /// assert!(ssang_giyeok.is_valid_initial());
@@ -893,7 +893,7 @@ impl JamoConsonantComposite {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::JamoConsonantComposite;
+    /// use hangul_cd::jamo::JamoConsonantComposite;
     ///
     /// let rieul_mieum = JamoConsonantComposite::RieulMieum;
     /// assert!(rieul_mieum.is_valid_final());
@@ -961,7 +961,7 @@ impl JamoVowelSingular {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::JamoVowelSingular;
+    /// use hangul_cd::jamo::JamoVowelSingular;
     ///
     /// let eo = JamoVowelSingular::Eo;
     /// assert_eq!(eo.char_modern(), '\u{1165}'); // Modern ㅓ
@@ -989,7 +989,7 @@ impl JamoVowelSingular {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::JamoVowelSingular;
+    /// use hangul_cd::jamo::JamoVowelSingular;
     ///
     /// let yo = JamoVowelSingular::Yo;
     /// assert_eq!(yo.char_compatibility(), 'ㅛ');
@@ -1027,7 +1027,7 @@ impl JamoVowelSingular {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::{
+    /// use hangul_cd::jamo::{
     ///     JamoVowelSingular,
     ///     JamoVowelComposite,
     /// };
@@ -1076,7 +1076,7 @@ impl JamoVowelComposite {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::JamoVowelComposite;
+    /// use hangul_cd::jamo::JamoVowelComposite;
     ///
     /// let wae = JamoVowelComposite::Wae;
     /// assert_eq!(wae.char_modern(), '\u{116B}'); // Modern ㅙ
@@ -1097,7 +1097,7 @@ impl JamoVowelComposite {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::JamoVowelComposite;
+    /// use hangul_cd::jamo::JamoVowelComposite;
     ///
     /// let wae = JamoVowelComposite::Wae;
     /// assert_eq!(wae.char_compatibility(), 'ㅙ');
@@ -1118,7 +1118,7 @@ impl JamoVowelComposite {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::{
+    /// use hangul_cd::jamo::{
     ///     Jamo,
     ///     JamoVowelSingular,
     ///     JamoVowelComposite,
@@ -1178,7 +1178,7 @@ impl Jamo {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::{Jamo, JamoConsonantSingular};
+    /// use hangul_cd::jamo::{Jamo, JamoConsonantSingular};
     /// let jamo = Jamo::Consonant(JamoConsonantSingular::Giyeok);
     /// assert_eq!(jamo.char_compatibility(), 'ㄱ');
     /// ```
@@ -1200,7 +1200,7 @@ impl Jamo {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::{Jamo, JamoConsonantSingular, JamoPosition};
+    /// use hangul_cd::jamo::{Jamo, JamoConsonantSingular, JamoPosition};
     /// let jamo = Jamo::Consonant(JamoConsonantSingular::Giyeok);
     /// assert_eq!(jamo.char_modern(JamoPosition::Initial), Some('ᄀ'));
     /// ```
@@ -1228,7 +1228,7 @@ impl Jamo {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::{Jamo, JamoConsonantSingular};
+    /// use hangul_cd::jamo::{Jamo, JamoConsonantSingular};
     /// let jamo = Jamo::from_modern_jamo('ᄀ').unwrap();
     /// assert_eq!(jamo, Jamo::Consonant(JamoConsonantSingular::Giyeok));
     /// ```
@@ -1241,7 +1241,7 @@ impl Jamo {
     ///
     /// **Example:**
     /// ```rust
-    /// use hangul::jamo::{Jamo, JamoConsonantSingular};
+    /// use hangul_cd::jamo::{Jamo, JamoConsonantSingular};
     /// let jamo = Jamo::from_compatibility_jamo('ㄱ').unwrap();
     /// assert_eq!(jamo, Jamo::Consonant(JamoConsonantSingular::Giyeok));
     /// ```

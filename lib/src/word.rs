@@ -35,8 +35,8 @@ pub enum WordError {
 ///
 /// **API:**
 /// ```rust
-/// use hangul::word::{HangulWordComposer, WordPushResult};
-/// use hangul::jamo::{Jamo, JamoConsonantSingular, JamoVowelSingular};
+/// use hangul_cd::word::{HangulWordComposer, WordPushResult};
+/// use hangul_cd::jamo::{Jamo, JamoConsonantSingular, JamoVowelSingular};
 ///
 /// let mut composer = HangulWordComposer::new();
 ///

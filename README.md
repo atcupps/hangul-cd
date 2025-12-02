@@ -16,7 +16,7 @@ hangul-cd focuses heavily on composition through a modular wrapper approach. The
 
 Work with individual Hangul letters, normalize compatibility codepoints, and compose or decompose composite Jamo.
 ```rust
-use hangul::jamo::{
+use hangul_cd::jamo::{
     Character,
     Jamo,
     JamoConsonantComposite,
@@ -44,13 +44,13 @@ assert_eq!(double, Some(JamoConsonantComposite::SsangGiyeok));
 
 Compose and decompose single syllable blocks.
 ```rust
-use hangul::block::{
+use hangul_cd::block::{
     BlockComposer,
     BlockCompletionStatus,
     HangulBlock,
     HangulBlockDecompositionOptions,
 };
-use hangul::jamo::{Jamo, JamoConsonantSingular, JamoUnicodeType, JamoVowelSingular};
+use hangul_cd::jamo::{Jamo, JamoConsonantSingular, JamoUnicodeType, JamoVowelSingular};
 
 // Use `BlockComposer` to easily work with `HangulBlock`s
 let mut composer = BlockComposer::new();
@@ -81,7 +81,7 @@ assert_eq!(block.decomposed_vec(&opts).unwrap(), vec!['ㄱ', 'ㅏ', 'ㅇ']);
 
 Compose multiple syllables into a word with push/pop semantics.
 ```rust
-use hangul::word::{HangulWordComposer, WordPushResult};
+use hangul_cd::word::{HangulWordComposer, WordPushResult};
 
 // Use `HangulWordComposer` to push and pop Jamo to words
 let mut word = HangulWordComposer::new();
@@ -99,7 +99,7 @@ assert_eq!(word.as_string().unwrap(), "안녀".to_string());
 
 Mix Hangul words with arbitrary text.
 ```rust
-use hangul::string::StringComposer;
+use hangul_cd::string::StringComposer;
 
 // Use a `StringComposer` to push and pop both Hangul and non-Hangul chars
 let mut s = StringComposer::new();
@@ -123,9 +123,9 @@ hangul = { path = "lib" }
 
 Compose a single block or whole words:
 ```rust
-use hangul::block::HangulBlock;
-use hangul::string::StringComposer;
-use hangul::jamo::Jamo;
+use hangul_cd::block::HangulBlock;
+use hangul_cd::string::StringComposer;
+use hangul_cd::jamo::Jamo;
 
 // Manual block construction
 let block = HangulBlock {
@@ -149,7 +149,7 @@ assert_eq!(composer.as_string().unwrap(), "한글 안녕".to_string());
 
 Work directly with jamo or compatibility jamo:
 ```rust
-use hangul::jamo::{create_composite_initial, modernize_jamo_initial, Character};
+use hangul_cd::jamo::{create_composite_initial, modernize_jamo_initial, Character};
 
 assert_eq!(modernize_jamo_initial('\u{3131}'), '\u{1100}'); // ㄱ -> modern jamo
 assert_eq!(create_composite_initial('ㄱ', 'ㄱ'), Some('ㄲ'));
