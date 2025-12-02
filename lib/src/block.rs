@@ -596,6 +596,43 @@ impl BlockComposer {
         }
     }
 
+    /// Tries to push a character into the `BlockComposer`. If the character
+    /// corresponds to a Hangul Jamo letter, it is pushed into the composer.
+    /// If the character is not Hangul, `BlockPushResult::NonHangul` is returned.
+    ///
+    /// **Example:**
+    /// ```rust
+    /// use hangul::block::{BlockComposer, BlockPushResult};
+    /// use hangul::jamo::{Jamo, JamoConsonantSingular, JamoVowelSingular};
+    ///
+    /// let mut composer = BlockComposer::new();
+    ///
+    /// // Push letters to form the syllable '강'
+    /// assert_eq!(
+    ///     composer.push_char('ㄱ').unwrap(),
+    ///     BlockPushResult::Success
+    /// );
+    /// assert_eq!(
+    ///     composer.push_char('ㅏ').unwrap(),
+    ///     BlockPushResult::Success
+    /// );
+    /// assert_eq!(
+    ///     composer.push_char('ㅇ').unwrap(),
+    ///     BlockPushResult::Success
+    /// );
+    ///
+    /// // Try to push another character that would not fit in the current block
+    /// assert_eq!(
+    ///   composer.push_char('ㅏ').unwrap(),
+    ///   BlockPushResult::PopAndStartNewBlock
+    /// );
+    pub fn push_char(&mut self, c: char) -> Result<BlockPushResult, BlockError> {
+        match Character::from_char(c)?.jamo() {
+            Some(jamo) => Ok(self.push(&jamo)),
+            None => Ok(BlockPushResult::NonHangul),
+        }
+    }
+
     /// Pops a Jamo letter from the `BlockComposer`. Returns a `BlockPopStatus`
     /// indicating the outcome of the operation, with values:
     /// - `PoppedAndNonEmpty(Jamo)`: A Jamo letter was popped and the block still has letters remaining.
