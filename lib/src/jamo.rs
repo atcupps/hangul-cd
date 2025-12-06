@@ -878,14 +878,14 @@ impl JamoConsonantComposite {
     /// assert!(!gieok_siot.is_valid_initial());
     /// ```
     pub fn is_valid_initial(&self) -> bool {
-        match self {
+        matches!(
+            self,
             JamoConsonantComposite::SsangGiyeok
-            | JamoConsonantComposite::SsangDigeut
-            | JamoConsonantComposite::SsangBieup
-            | JamoConsonantComposite::SsangSiot
-            | JamoConsonantComposite::SsangJieut => true,
-            _ => false,
-        }
+                | JamoConsonantComposite::SsangDigeut
+                | JamoConsonantComposite::SsangBieup
+                | JamoConsonantComposite::SsangSiot
+                | JamoConsonantComposite::SsangJieut
+        )
     }
 
     /// Checks if the composite consonant is valid for use in the final position
@@ -902,22 +902,22 @@ impl JamoConsonantComposite {
     /// assert!(ssang_giyeok.is_valid_final());
     /// ```
     pub fn is_valid_final(&self) -> bool {
-        match self {
+        matches!(
+            self,
             JamoConsonantComposite::GiyeokSiot
-            | JamoConsonantComposite::NieunJieut
-            | JamoConsonantComposite::NieunHieut
-            | JamoConsonantComposite::RieulGiyeok
-            | JamoConsonantComposite::RieulMieum
-            | JamoConsonantComposite::RieulBieup
-            | JamoConsonantComposite::RieulSiot
-            | JamoConsonantComposite::RieulTieut
-            | JamoConsonantComposite::RieulPieup
-            | JamoConsonantComposite::RieulHieut
-            | JamoConsonantComposite::SsangGiyeok
-            | JamoConsonantComposite::SsangSiot
-            | JamoConsonantComposite::BieupSiot => true,
-            _ => false,
-        }
+                | JamoConsonantComposite::NieunJieut
+                | JamoConsonantComposite::NieunHieut
+                | JamoConsonantComposite::RieulGiyeok
+                | JamoConsonantComposite::RieulMieum
+                | JamoConsonantComposite::RieulBieup
+                | JamoConsonantComposite::RieulSiot
+                | JamoConsonantComposite::RieulTieut
+                | JamoConsonantComposite::RieulPieup
+                | JamoConsonantComposite::RieulHieut
+                | JamoConsonantComposite::SsangGiyeok
+                | JamoConsonantComposite::SsangSiot
+                | JamoConsonantComposite::BieupSiot
+        )
     }
 }
 

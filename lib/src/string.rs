@@ -65,6 +65,12 @@ pub struct StringComposer {
     current: HangulWordComposer,
 }
 
+impl Default for StringComposer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StringComposer {
     /// Creates a new, empty `StringComposer`.
     pub fn new() -> Self {

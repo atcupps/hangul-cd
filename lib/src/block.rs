@@ -87,6 +87,23 @@ pub struct HangulBlock {
     pub final_optional: Option<Jamo>,
 }
 
+/// A tuple representing the decomposed Jamo characters of a `HangulBlock`.
+/// The tuple contains six `Option<Jamo>` values representing:
+/// - First initial consonant
+/// - Second initial consonant (if composite)
+/// - First vowel
+/// - Second vowel (if composite)
+/// - First final consonant (if any)
+/// - Second final consonant (if composite)
+pub type DecomposedTuple = (
+    Option<Jamo>,
+    Option<Jamo>,
+    Option<Jamo>,
+    Option<Jamo>,
+    Option<Jamo>,
+    Option<Jamo>,
+);
+
 impl HangulBlock {
     /// Converts the `HangulBlock` into a composed Hangul syllable unicode
     /// character. Assumes all chars are valid Jamo.
@@ -147,7 +164,7 @@ impl HangulBlock {
     /// Creates a `HangulBlock` from a composed Hangul syllable unicode character.
     pub fn from_char(c: char) -> Result<Self, BlockError> {
         let codepoint = c as u32;
-        if codepoint < S_BASE || codepoint > S_BASE + S_COUNT {
+        if !(S_BASE..=S_BASE + S_COUNT).contains(&codepoint) {
             return Err(BlockError::InvalidBlockRepresentation(codepoint));
         }
 
@@ -189,39 +206,30 @@ impl HangulBlock {
     /// - Second vowel (if composite)
     /// - First final consonant (if any)
     /// - Second final consonant (if composite)
-    pub fn decomposed_tuple(
-        &self,
-    ) -> Result<
-        (
-            Option<Jamo>,
-            Option<Jamo>,
-            Option<Jamo>,
-            Option<Jamo>,
-            Option<Jamo>,
-            Option<Jamo>,
-        ),
-        BlockError,
-    > {
+    pub fn decomposed_tuple(&self) -> Result<DecomposedTuple, BlockError> {
         let (i1, i2) = match &self.initial {
-            Jamo::CompositeConsonant(c) => match c.decompose() {
-                (a, b) => (Some(a), Some(b)),
-            },
+            Jamo::CompositeConsonant(c) => {
+                let (a, b) = c.decompose();
+                (Some(a), Some(b))
+            }
             Jamo::Consonant(c) => (Some(Jamo::Consonant(c.clone())), None),
             _ => (None, None),
         };
 
         let (v1, v2) = match &self.vowel {
-            Jamo::CompositeVowel(c) => match c.decompose() {
-                (a, b) => (Some(a), Some(b)),
-            },
+            Jamo::CompositeVowel(c) => {
+                let (a, b) = c.decompose();
+                (Some(a), Some(b))
+            }
             Jamo::Vowel(c) => (Some(Jamo::Vowel(c.clone())), None),
             _ => (None, None),
         };
 
         let (f1, f2) = match &self.final_optional {
-            Some(Jamo::CompositeConsonant(c)) => match c.decompose() {
-                (a, b) => (Some(a), Some(b)),
-            },
+            Some(Jamo::CompositeConsonant(c)) => {
+                let (a, b) = c.decompose();
+                (Some(a), Some(b))
+            }
             Some(Jamo::Consonant(c)) => (Some(Jamo::Consonant(c.clone())), None),
             _ => (None, None),
         };
@@ -267,12 +275,9 @@ impl HangulBlock {
             }
             (Jamo::CompositeConsonant(c), JamoUnicodeType::Compatibility) => {
                 if options.decompose_composites {
-                    match c.decompose() {
-                        (a, b) => {
-                            result.push(a.char_compatibility());
-                            result.push(b.char_compatibility());
-                        }
-                    }
+                    let (a, b) = c.decompose();
+                    result.push(a.char_compatibility());
+                    result.push(b.char_compatibility());
                 } else {
                     result.push(c.char_compatibility());
                 }
@@ -321,12 +326,9 @@ impl HangulBlock {
             }
             (Jamo::CompositeVowel(c), JamoUnicodeType::Compatibility) => {
                 if options.decompose_composites {
-                    match c.decompose() {
-                        (a, b) => {
-                            result.push(a.char_compatibility());
-                            result.push(b.char_compatibility());
-                        }
-                    }
+                    let (a, b) = c.decompose();
+                    result.push(a.char_compatibility());
+                    result.push(b.char_compatibility());
                 } else {
                     result.push(c.char_compatibility());
                 }
@@ -376,12 +378,9 @@ impl HangulBlock {
                 }
                 (Jamo::CompositeConsonant(c), JamoUnicodeType::Compatibility) => {
                     if options.decompose_composites {
-                        match c.decompose() {
-                            (a, b) => {
-                                result.push(a.char_compatibility());
-                                result.push(b.char_compatibility());
-                            }
-                        }
+                        let (a, b) = c.decompose();
+                        result.push(a.char_compatibility());
+                        result.push(b.char_compatibility());
                     } else {
                         result.push(c.char_compatibility());
                     }
@@ -468,6 +467,7 @@ pub enum BlockPushResult {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+#[allow(clippy::enum_variant_names)] // Names improve clarity here
 enum BlockCompositionState {
     /// nothing, waiting for first consonant
     ExpectingInitial,
@@ -534,6 +534,12 @@ pub struct BlockComposer {
     vowel_second: Option<Jamo>,
     final_first: Option<Jamo>,
     final_second: Option<Jamo>,
+}
+
+impl Default for BlockComposer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// The status of attempting to complete a Hangul syllable block.
@@ -628,7 +634,7 @@ impl BlockComposer {
     /// );
     pub fn push_char(&mut self, c: char) -> Result<BlockPushResult, BlockError> {
         match Character::from_char(c)?.jamo() {
-            Some(jamo) => Ok(self.push(&jamo)),
+            Some(jamo) => Ok(self.push(jamo)),
             None => Ok(BlockPushResult::NonHangul),
         }
     }
@@ -695,10 +701,8 @@ impl BlockComposer {
     pub(crate) fn pop_end_consonant(&mut self) -> Option<Jamo> {
         if let Some(c) = self.final_second.take() {
             Some(c)
-        } else if let Some(c) = self.final_first.take() {
-            Some(c)
         } else {
-            None
+            self.final_first.take()
         }
     }
 
@@ -741,14 +745,13 @@ impl BlockComposer {
                 self.state = BlockCompositionState::ExpectingCompositeVowelOrFinal;
                 BlockPushResult::Success
             }
-            Jamo::CompositeVowel(c) => match c.decompose() {
-                (v1, v2) => {
-                    self.vowel_first = Some(v1);
-                    self.vowel_second = Some(v2);
-                    self.state = BlockCompositionState::ExpectingFinal;
-                    BlockPushResult::Success
-                }
-            },
+            Jamo::CompositeVowel(c) => {
+                let (v1, v2) = c.decompose();
+                self.vowel_first = Some(v1);
+                self.vowel_second = Some(v2);
+                self.state = BlockCompositionState::ExpectingFinal;
+                BlockPushResult::Success
+            }
             Jamo::CompositeConsonant(_) => BlockPushResult::InvalidHangul,
         }
     }
@@ -760,14 +763,13 @@ impl BlockComposer {
                 self.state = BlockCompositionState::ExpectingCompositeVowelOrFinal;
                 BlockPushResult::Success
             }
-            Jamo::CompositeVowel(c) => match c.decompose() {
-                (v1, v2) => {
-                    self.vowel_first = Some(v1);
-                    self.vowel_second = Some(v2);
-                    self.state = BlockCompositionState::ExpectingFinal;
-                    BlockPushResult::Success
-                }
-            },
+            Jamo::CompositeVowel(c) => {
+                let (v1, v2) = c.decompose();
+                self.vowel_first = Some(v1);
+                self.vowel_second = Some(v2);
+                self.state = BlockCompositionState::ExpectingFinal;
+                BlockPushResult::Success
+            }
             _ => BlockPushResult::InvalidHangul,
         }
     }
@@ -793,14 +795,11 @@ impl BlockComposer {
             }
             Jamo::CompositeConsonant(c) => {
                 if c.is_valid_final() {
-                    match c.decompose() {
-                        (f1, f2) => {
-                            self.final_first = Some(f1);
-                            self.final_second = Some(f2);
-                            self.state = BlockCompositionState::ExpectingNextBlock;
-                            BlockPushResult::Success
-                        }
-                    }
+                    let (f1, f2) = c.decompose();
+                    self.final_first = Some(f1);
+                    self.final_second = Some(f2);
+                    self.state = BlockCompositionState::ExpectingNextBlock;
+                    BlockPushResult::Success
                 } else if c.is_valid_initial() {
                     BlockPushResult::StartNewBlockNoPop
                 } else {
@@ -820,14 +819,11 @@ impl BlockComposer {
             }
             Jamo::CompositeConsonant(c) => {
                 if c.is_valid_final() {
-                    match c.decompose() {
-                        (f1, f2) => {
-                            self.final_first = Some(f1);
-                            self.final_second = Some(f2);
-                            self.state = BlockCompositionState::ExpectingNextBlock;
-                            BlockPushResult::Success
-                        }
-                    }
+                    let (f1, f2) = c.decompose();
+                    self.final_first = Some(f1);
+                    self.final_second = Some(f2);
+                    self.state = BlockCompositionState::ExpectingNextBlock;
+                    BlockPushResult::Success
                 } else if c.is_valid_initial() {
                     BlockPushResult::StartNewBlockNoPop
                 } else {
@@ -905,7 +901,7 @@ impl BlockComposer {
     pub fn try_as_complete_block(&self) -> Result<BlockCompletionStatus, BlockError> {
         let initial_optional = match (&self.initial_first, &self.initial_second) {
             (Some(Jamo::Consonant(i1)), Some(Jamo::Consonant(i2))) => {
-                match i1.combine_for_initial(&i2) {
+                match i1.combine_for_initial(i2) {
                     Some(composite) => Some(Jamo::CompositeConsonant(composite)),
                     None => {
                         return Err(BlockError::JamoInInvalidPosition(
@@ -919,7 +915,7 @@ impl BlockComposer {
             _ => None,
         };
         let vowel_optional = match (&self.vowel_first, &self.vowel_second) {
-            (Some(Jamo::Vowel(v1)), Some(Jamo::Vowel(v2))) => match v1.combine(&v2) {
+            (Some(Jamo::Vowel(v1)), Some(Jamo::Vowel(v2))) => match v1.combine(v2) {
                 Some(composite) => Some(Jamo::CompositeVowel(composite)),
                 None => {
                     return Err(BlockError::JamoInInvalidPosition(
@@ -933,7 +929,7 @@ impl BlockComposer {
         };
         let final_optional = match (&self.final_first, &self.final_second) {
             (Some(Jamo::Consonant(f1)), Some(Jamo::Consonant(f2))) => {
-                match f1.combine_for_final(&f2) {
+                match f1.combine_for_final(f2) {
                     Some(composite) => Some(Jamo::CompositeConsonant(composite)),
                     None => {
                         return Err(BlockError::JamoInInvalidPosition(
@@ -969,9 +965,7 @@ impl BlockComposer {
     /// it returns `None`.
     pub fn block_as_string(&self) -> Result<Option<char>, BlockError> {
         match self.try_as_complete_block()? {
-            BlockCompletionStatus::Complete(block) => match block.to_char()? {
-                c => Ok(Some(c)),
-            },
+            BlockCompletionStatus::Complete(block) => Ok(Some(block.to_char()?)),
             BlockCompletionStatus::Incomplete(c) => Ok(c.char_modern(match c {
                 Jamo::Consonant(_) | Jamo::CompositeConsonant(_) => JamoPosition::Initial,
                 Jamo::Vowel(_) | Jamo::CompositeVowel(_) => JamoPosition::Vowel,

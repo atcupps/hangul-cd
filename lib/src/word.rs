@@ -73,6 +73,12 @@ pub struct HangulWordComposer {
     cur_block: BlockComposer,
 }
 
+impl Default for HangulWordComposer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// The result of attempting to push a character into the `HangulWordComposer`.
 #[derive(Debug, PartialEq, Eq)]
 pub enum WordPushResult {
